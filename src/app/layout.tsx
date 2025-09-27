@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Interviewer - shadcn/ui Showcase",
-  description: "A comprehensive showcase of all shadcn/ui components with interactive examples and latest updates",
+  title: "AI-Powered Interview Assistant | Crisp",
+  description: "Streamline your technical interview process with AI-powered questions and automated scoring",
 };
 
 export default function RootLayout({
