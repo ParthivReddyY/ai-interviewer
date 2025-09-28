@@ -1,172 +1,138 @@
-# AI Interviewer - shadcn/ui Component Showcase
+# AI Interviewer
 
-This is a Next.js project showcasing all the latest shadcn/ui components. The project includes a comprehensive component library with the latest updates from shadcn/ui.
+An intelligent interview platform that conducts automated technical interviews for full-stack developers. Built with Next.js and powered by AI, it provides a complete interview experience for both candidates and interviewers.
 
-## 🚀 Features
+## What it does
 
-- **Complete shadcn/ui Integration**: All essential components installed and configured
-- **Interactive Component Showcase**: Live examples of every component in action
-- **Latest Updates**: Using the most recent versions of shadcn/ui components
-- **TypeScript Ready**: Full TypeScript support for all components
-- **Dark Mode Support**: Built-in theme switching capabilities
-- **Responsive Design**: Mobile-first responsive layout
+This application simulates a real technical interview where candidates upload their resume, answer 6 progressively challenging questions, and receive instant AI-powered evaluation. Interviewers can review all candidates through a comprehensive dashboard with detailed performance analytics.
 
-## 📦 Installed shadcn/ui Components
+## Key Features
 
-The following components are installed and showcased:
+### For Candidates
+- **Smart Resume Processing** - Upload your PDF or DOCX resume and let AI extract your details
+- **Timed Technical Questions** - Answer 6 carefully crafted questions (2 easy, 2 medium, 2 hard)
+- **Real-time Timer** - Each question has specific time limits to simulate real interview pressure
+- **Session Recovery** - Accidentally closed the browser? No problem, resume right where you left off
+- **Instant Feedback** - Get your score and personalized summary immediately after completing
 
-### Form Components
-- **Button** - Various button styles and sizes
-- **Input** - Text input fields
-- **Textarea** - Multi-line text input
-- **Label** - Form labels
-- **Checkbox** - Checkbox input
-- **Switch** - Toggle switch
-- **Select** - Dropdown selection
-- **Form** - Form handling utilities
+### For Interviewers  
+- **Candidate Dashboard** - View all candidates ranked by performance
+- **Detailed Analytics** - See complete interview transcripts, individual question scores, and response times
+- **Smart Search & Filtering** - Quickly find candidates by name, email, or sort by various criteria
+- **AI-Generated Insights** - Get comprehensive summaries of each candidate's strengths and areas for improvement
 
-### Layout Components
-- **Card** - Content containers
-- **Separator** - Visual dividers
-- **Aspect Ratio** - Maintain aspect ratios
-- **Scroll Area** - Custom scrollable areas
-- **Resizable** - Resizable panels
-- **Sidebar** - Navigation sidebar
+### Technical Highlights
+- **Offline-First** - Everything works without a backend server, using smart browser storage
+- **AI-Powered** - Uses Google's Generative AI for question generation and answer evaluation
+- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
+- **Type-Safe** - Built with TypeScript for better code quality and developer experience
 
-### Navigation Components
-- **Tabs** - Tabbed interfaces
-- **Accordion** - Collapsible content
-- **Breadcrumb** - Navigation breadcrumbs
-- **Navigation Menu** - Complex navigation
-- **Menubar** - Menu bar component
+## Getting Started
 
-### Display Components
-- **Avatar** - User profile images
-- **Badge** - Status indicators
-- **Progress** - Progress bars
-- **Skeleton** - Loading placeholders
-- **Table** - Data tables
-- **Calendar** - Date picker
+### Prerequisites
+You'll need Node.js 18+ and npm installed on your machine.
 
-### Interactive Components
-- **Dialog** - Modal dialogs
-- **Alert Dialog** - Confirmation dialogs
-- **Dropdown Menu** - Context menus
-- **Popover** - Floating content
-- **Hover Card** - Hover information
-- **Tooltip** - Contextual hints
-- **Command** - Command palette
-- **Context Menu** - Right-click menus
-- **Sheet** - Slide-out panels
-- **Drawer** - Mobile-friendly drawers
+### Installation
 
-### Feedback Components
-- **Alert** - Important messages
-- **Sonner** - Modern toast notifications
+1. Clone the repository:
+```bash
+git clone https://github.com/ParthivReddyY/ai-interviewer.git
+cd ai-interviewer
+```
 
-### Media Components
-- **Carousel** - Image/content carousel
-- **Chart** - Data visualization
-
-### Control Components
-- **Toggle** - Toggle buttons
-- **Toggle Group** - Toggle button groups
-- **Collapsible** - Collapsible sections
-- **Input OTP** - One-time password input
-
-## 🛠️ Getting Started
-
-First, install the dependencies:
-
+2. Install dependencies:
 ```bash
 npm install
-# or
-yarn install
-# or
-pnpm install
-# or
-bun install
 ```
 
-Then, run the development server:
+3. Set up your environment variables:
+Create a `.env.local` file in the root directory and add your Google AI API key:
+```
+GOOGLE_AI_API_KEY=your_api_key_here
+```
 
+4. Start the development server:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-## 🎨 Customization
+## How to Use
 
-The project is configured with:
-- **Style**: New York style (modern and clean)
-- **Base Color**: Zinc color palette
-- **CSS Variables**: Enabled for easy theming
-- **Icon Library**: Lucide React icons
-- **TypeScript**: Full TypeScript support
+### For Candidates
+1. **Upload Resume** - Start by uploading your PDF or DOCX resume
+2. **Provide Details** - Fill in any missing information the AI couldn't extract
+3. **Start Interview** - Begin your timed technical interview
+4. **Answer Questions** - Respond to 6 questions of increasing difficulty
+5. **Get Results** - View your score and detailed feedback
 
-You can customize the configuration by editing `components.json`:
+### For Interviewers
+1. **Switch to Interviewer Tab** - Click the "Interviewer" tab at the top
+2. **Browse Candidates** - See all candidates sorted by their scores
+3. **Review Performance** - Click on any candidate to see their full interview details
+4. **Use Filters** - Search by name or sort by different criteria to find specific candidates
 
-```json
-{
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
-  "rsc": true,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/app/globals.css",
-    "baseColor": "zinc",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "lucide",
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui"
-  }
-}
-```
+## Tech Stack
 
-## 📱 Adding New Components
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: Zustand for global state
+- **AI Integration**: Google Generative AI
+- **File Processing**: PDF.js for resume parsing
+- **Storage**: Browser localStorage for persistence
+- **Icons**: Lucide React
 
-To add more shadcn/ui components:
+## Features in Detail
 
-```bash
-npx shadcn@latest add [component-name]
-```
+### Smart Resume Processing
+- Automatically extracts name, email, and phone number from PDF/DOCX files
+- Handles missing information gracefully by asking candidates directly
+- Validates file types and provides clear error messages
 
-For example:
-```bash
-npx shadcn@latest add button
-npx shadcn@latest add card
-npx shadcn@latest add input
-```
+### Dynamic Interview System
+- **Easy Questions** (20 seconds each): Basic concepts and syntax
+- **Medium Questions** (60 seconds each): Problem-solving and practical knowledge  
+- **Hard Questions** (120 seconds each): Complex scenarios and best practices
+- Auto-submits answers when time runs out
+- Shows real-time progress throughout the interview
 
-## 🌙 Theme Support
+### Intelligent Evaluation
+- AI analyzes answers for technical accuracy and completeness
+- Provides detailed scoring for each individual question
+- Generates personalized feedback highlighting strengths and improvement areas
+- Calculates overall performance score
 
-The project includes built-in dark mode support. The theme system uses CSS variables for easy customization. You can modify the theme colors in `src/app/globals.css`.
+### Persistent Data Storage
+- All interview data is saved locally in your browser
+- Resume interrupted interviews seamlessly
+- No data is lost even if you accidentally close the browser
+- Works completely offline after initial AI API calls
 
-## 📚 Documentation
+## Contributing
 
-- [shadcn/ui Documentation](https://ui.shadcn.com)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [Lucide React Icons](https://lucide.dev)
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and commit: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## 🚀 Deployment
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Vercel (Recommended)
+1. Push your code to GitHub
+2. Connect your repository to [Vercel](https://vercel.com)
+3. Add your `GOOGLE_AI_API_KEY` environment variable
+4. Deploy with one click
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Other Platforms
+This app works on any platform that supports Next.js, including Netlify, Railway, and traditional hosting providers.
 
-## 📄 License
+## License
 
-This project is open source and available under the [MIT License](LICENSE).
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you encounter any issues or have questions, please [open an issue](https://github.com/ParthivReddyY/ai-interviewer/issues) on GitHub.
