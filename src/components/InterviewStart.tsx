@@ -31,8 +31,15 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
         content: `Welcome to your technical interview, ${candidate.name}! You'll be asked 6 questions of varying difficulty. Take your time to provide thoughtful answers.`,
       });
 
-      // Generate questions using AI
-      const questions = await aiService.generateQuestions(candidate.name);
+      // Generate questions using AI with enhanced resume context
+      const resumeData = (candidate.skills || candidate.experience || candidate.education) && candidate.resumeContent ? {
+        skills: candidate.skills,
+        experience: candidate.experience,
+        education: candidate.education,
+        rawText: candidate.resumeContent
+      } : undefined;
+      
+      const questions = await aiService.generateQuestions(candidate.name, candidate.resumeContent, resumeData);
       
       // Add questions to the interview
       questions.forEach(question => {
@@ -94,6 +101,52 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
               <p>{candidate.phone}</p>
             </div>
           </div>
+          
+          {/* Enhanced Resume Information */}
+          {(candidate.skills || candidate.experience || candidate.education) && (
+            <div className="mt-4 pt-4 border-t">
+              <h4 className="font-medium mb-3 text-muted-foreground">Resume Insights</h4>
+              <div className="space-y-3 text-sm">
+                {candidate.skills && candidate.skills.length > 0 && (
+                  <div>
+                    <span className="font-medium text-muted-foreground">Key Skills:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {candidate.skills.slice(0, 8).map((skill, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                      {candidate.skills.length > 8 && (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
+                          +{candidate.skills.length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {candidate.experience && (
+                  <div>
+                    <span className="font-medium text-muted-foreground">Experience:</span>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {candidate.experience.slice(0, 120)}
+                      {candidate.experience.length > 120 && '...'}
+                    </p>
+                  </div>
+                )}
+                
+                {candidate.education && (
+                  <div>
+                    <span className="font-medium text-muted-foreground">Education:</span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {candidate.education.slice(0, 100)}
+                      {candidate.education.length > 100 && '...'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Interview Instructions */}

@@ -4,6 +4,9 @@ export interface Candidate {
   email: string;
   phone: string;
   resumeContent?: string;
+  skills?: string[];
+  experience?: string;
+  education?: string;
   createdAt: Date;
   completedAt?: Date;
 }
@@ -13,6 +16,7 @@ export interface Question {
   text: string;
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimit: number; // in seconds
+  category?: string;
 }
 
 export interface Answer {
@@ -21,6 +25,8 @@ export interface Answer {
   timeSpent: number; // in seconds
   score?: number;
   feedback?: string;
+  strengths?: string[];
+  improvements?: string[];
 }
 
 export interface Interview {

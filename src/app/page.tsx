@@ -4,9 +4,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/store/useAppStore";
 import IntervieweeTab from "@/components/IntervieweeTab";
 import InterviewerTab from "@/components/InterviewerTab";
+import { WelcomeBackModal } from "@/components/WelcomeBackModal";
+import type { Interview, Candidate } from "@/types";
 
 export default function Home() {
-  const { activeTab, setActiveTab } = useAppStore();
+  const { activeTab, setActiveTab, interviews, getCandidateById } = useAppStore();
+  const [showWelcomeBack, setShowWelcomeBack] = React.useState(false);
+  const [unfinishedInterview, setUnfinishedInterview] = React.useState<{ interview: Interview; candidate: Candidate } | null>(null);
+
+  // Check for unfinished interviews on mount
+  React.useEffect(() => {
+    // Look for in-progress interviews
+    const inProgressInterview = interviews.find(i => i.status === 'in-progress');
+    
+    if (inProgressInterview) {
+      const candidate = getCandidateById(inProgressInterview.candidateId);
+      if (candidate) {
+        setUnfinishedInterview({ interview: inProgressInterview, candidate });
+        setShowWelcomeBack(true);
+      }
+    }
+  }, [interviews, getCandidateById]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,6 +53,16 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Welcome Back Modal */}
+      {unfinishedInterview && (
+        <WelcomeBackModal
+          isOpen={showWelcomeBack}
+          onClose={() => setShowWelcomeBack(false)}
+          interview={unfinishedInterview.interview}
+          candidate={unfinishedInterview.candidate}
+        />
+      )}
     </div>
   );
 }

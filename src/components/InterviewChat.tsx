@@ -40,14 +40,20 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
     if (!interview) return;
 
     try {
-      // Calculate final score
-      const scores = interview.answers.map(a => a.score || 0);
-      const finalScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      // Evaluate all answers now
+      const evaluationResult = await aiService.evaluateAllAnswers(interview.questions, interview.answers);
+      
+      // Update interview with evaluated answers
+      evaluationResult.detailedFeedback.forEach((evaluatedAnswer, index) => {
+        interview.answers[index] = evaluatedAnswer;
+      });
+
+      const finalScore = evaluationResult.overallScore;
 
       // Generate final summary with AI
       let summary = '';
       try {
-        summary = await aiService.generateFinalSummary(interview.answers, finalScore);
+        summary = await aiService.generateFinalSummary(evaluationResult.detailedFeedback, finalScore);
       } catch (error) {
         console.error('Error generating summary:', error);
         summary = 'Interview completed successfully. Detailed feedback is not available at this time.';
@@ -56,14 +62,47 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
       // Complete the interview
       completeInterview(interview.id, finalScore, summary);
 
-      // Add completion message
+      // Calculate performance stats
+      const questionsAnswered = interview.answers.length;
+
+      const totalTimeAllowed = interview.questions.reduce((acc, q) => acc + q.timeLimit, 0);
+      const totalTimeUsed = interview.answers.reduce((acc, ans) => acc + ans.timeSpent, 0);
+      
+      // Determine performance level
+      let performanceLevel = '';
+      if (finalScore >= 8.5) performanceLevel = '🌟 Outstanding';
+      else if (finalScore >= 7.5) performanceLevel = '🚀 Excellent';
+      else if (finalScore >= 6.5) performanceLevel = '✅ Good';
+      else if (finalScore >= 5.0) performanceLevel = '📈 Average';
+      else performanceLevel = '💪 Needs Improvement';
+
+      // Add comprehensive completion message
       addChatMessage({
         type: 'system',
-        content: `🎉 Interview completed!\n\nFinal Score: ${finalScore.toFixed(1)}/10\n\n${summary}`,
+        content: `🎉 **INTERVIEW COMPLETED!** 🎉
+
+📊 **FINAL RESULTS**
+Overall Score: ${finalScore.toFixed(1)}/10 (${performanceLevel})
+Questions Answered: ${questionsAnswered}/${interview.questions.length}
+Time Efficiency: ${Math.round((totalTimeUsed/totalTimeAllowed) * 100)}% of allocated time used
+
+📝 **PERFORMANCE SUMMARY**
+${summary}
+
+🔍 **NEXT STEPS**
+• Review detailed results in the Interviewer tab
+• Check individual question scores and feedback
+• Use improvement suggestions for future growth
+
+Thank you for completing this technical interview! Your responses have been saved and are ready for review.
+
+🎯 Switching to results view in 3 seconds...`,
       });
 
       // Switch to interviewer tab to show results
-      setActiveTab('interviewer');
+      setTimeout(() => {
+        setActiveTab('interviewer');
+      }, 3000);
     } catch (error) {
       console.error('Error completing interview:', error);
       addChatMessage({
@@ -79,72 +118,69 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
     setIsSubmitting(true);
     setIsTimerRunning(false);
 
-    try {
-      const timeSpent = currentQuestion.timeLimit - timeLeft;
-      
-      // Add user message to chat
-      addChatMessage({
-        type: 'user',
-        content: answerText,
-      });
-
-      // Create answer object
-      const answer: Answer = {
-        questionId: currentQuestion.id,
-        text: answerText,
-        timeSpent: timeSpent,
-        score: 0,
-        feedback: '',
-      };
-
-      // Evaluate answer with AI
+    // Use setTimeout to defer state updates and avoid the setState during render issue
+    setTimeout(() => {
       try {
-        const evaluation = await aiService.evaluateAnswer(currentQuestion, answer);
-        answer.score = evaluation.score;
-        answer.feedback = evaluation.feedback;
-      } catch (error) {
-        console.error('Error evaluating answer:', error);
-        // Fallback scoring
-        answer.score = answerText.length > 10 ? 5 : 2;
-        answer.feedback = 'Unable to provide detailed feedback at this time.';
-      }
-
-      // Add answer to interview
-      addAnswer(interview.id, answer);
-
-      // Add feedback message
-      addChatMessage({
-        type: 'system',
-        content: `Answer submitted! Score: ${answer.score}/10\nTime used: ${timeSpent}/${currentQuestion.timeLimit} seconds`,
-      });
-
-      // Move to next question or complete interview
-      if (isLastQuestion) {
-        await completeInterviewProcess();
-      } else {
-        // Move to next question
-        nextQuestion(interview.id);
+        const timeSpent = currentQuestion.timeLimit - timeLeft;
         
-        const nextQ = interview.questions[interview.currentQuestionIndex + 1];
-        if (nextQ) {
+        // Add user message to chat
+        addChatMessage({
+          type: 'user',
+          content: answerText,
+        });
+
+        // Create answer object without evaluation
+        const answer: Answer = {
+          questionId: currentQuestion.id,
+          text: answerText,
+          timeSpent: timeSpent,
+          score: 0,
+          feedback: 'Answer recorded. Evaluation will be provided at the end.',
+          strengths: [],
+          improvements: []
+        };
+
+        // Add answer to interview
+        addAnswer(interview.id, answer);
+
+        // Add simple confirmation message
+        addChatMessage({
+          type: 'system',
+          content: `✅ Answer submitted successfully!\n\n⏱️ Time used: ${timeSpent}/${currentQuestion.timeLimit} seconds\n\nYour answer has been recorded. Continue to the next question.`,
+        });
+
+        // Move to next question or complete interview
+        if (isLastQuestion) {
+          addChatMessage({
+            type: 'system',
+            content: '🏁 That was the final question! Processing your interview results...',
+          });
+          setTimeout(() => completeInterviewProcess(), 2000);
+        } else {
+          // Move to next question
+          nextQuestion(interview.id);
+          
+          const nextQ = interview.questions[interview.currentQuestionIndex + 1];
+          if (nextQ) {
           addChatMessage({
             type: 'ai',
-            content: `Great! Let's continue with question ${interview.currentQuestionIndex + 2} of ${interview.questions.length}:\n\n${nextQ.text}\n\nYou have ${nextQ.timeLimit} seconds to answer.`,
+            content: `Great work! Let's continue with question ${interview.currentQuestionIndex + 2} of ${interview.questions.length}:\n\n📋 Category: ${nextQ.category || 'General'}\n🎯 Difficulty: ${nextQ.difficulty}\n\n❓ ${nextQ.text}\n\nYou have ${nextQ.timeLimit} seconds to answer. Take your time and provide a detailed response.`,
           });
           setTimeLeft(nextQ.timeLimit);
           setIsTimerRunning(true);
         }
       }
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      addChatMessage({
-        type: 'system',
-        content: 'There was an error submitting your answer. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-      setCurrentAnswer("");
-    }
+      } catch (error) {
+        console.error('Error submitting answer:', error);
+        addChatMessage({
+          type: 'system',
+          content: 'There was an error submitting your answer. Please try again.',
+        });
+      } finally {
+        setIsSubmitting(false);
+        setCurrentAnswer("");
+      }
+    }, 0);
   }, [isSubmitting, currentQuestion, interview, timeLeft, addChatMessage, addAnswer, isLastQuestion, completeInterviewProcess, nextQuestion]);
 
   const handleAutoSubmit = React.useCallback(async () => {
@@ -160,13 +196,32 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
     await submitAnswer(currentAnswer);
   }, [currentAnswer, submitAnswer]);
 
-  // Start timer when component mounts or question changes
+  // Start timer when component mounts or question changes - with restoration support
   React.useEffect(() => {
-    if (currentQuestion && timeLeft === 0) {
-      setTimeLeft(currentQuestion.timeLimit);
-      setIsTimerRunning(true);
+    if (currentQuestion) {
+      // Check if we have a saved timer state in localStorage
+      const savedTimerKey = `timer_${interview?.id}_${currentQuestion.id}`;
+      const savedTime = localStorage.getItem(savedTimerKey);
+      
+      if (savedTime && parseInt(savedTime) > 0) {
+        // Restore saved timer state
+        setTimeLeft(parseInt(savedTime));
+        setIsTimerRunning(true);
+      } else if (timeLeft === 0) {
+        // Start new timer
+        setTimeLeft(currentQuestion.timeLimit);
+        setIsTimerRunning(true);
+      }
     }
-  }, [currentQuestion, timeLeft]);
+  }, [currentQuestion, timeLeft, interview?.id]);
+
+  // Save timer state to localStorage
+  React.useEffect(() => {
+    if (currentQuestion && interview?.id && timeLeft > 0) {
+      const savedTimerKey = `timer_${interview.id}_${currentQuestion.id}`;
+      localStorage.setItem(savedTimerKey, timeLeft.toString());
+    }
+  }, [timeLeft, currentQuestion, interview?.id]);
 
   // Timer countdown
   React.useEffect(() => {
@@ -206,45 +261,124 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getTimerColor = () => {
-    if (timeLeft <= 30) return 'bg-red-500';
-    if (timeLeft <= 60) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
 
-  const getProgressWidth = () => {
-    const percentage = ((interview.currentQuestionIndex + 1) / interview.questions.length) * 100;
-    if (percentage <= 16.67) return 'w-1/6';
-    if (percentage <= 33.33) return 'w-1/3';
-    if (percentage <= 50) return 'w-1/2';
-    if (percentage <= 66.67) return 'w-2/3';
-    if (percentage <= 83.33) return 'w-5/6';
-    return 'w-full';
-  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-4">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-lg">
-                Question {interview.currentQuestionIndex + 1} of {interview.questions.length}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                General Interview
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <Badge variant="secondary" className={`${getTimerColor()} text-white`}>
-                {formatTime(timeLeft)}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Sidebar - Question Status */}
+        <div className="lg:col-span-1 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Interview Progress</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Overall Progress */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Overall Progress</span>
+                  <span>{interview.currentQuestionIndex + 1} / {interview.questions.length}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className={`bg-primary h-2 rounded-full transition-all duration-300 ${
+                      interview.currentQuestionIndex + 1 === 1 ? 'w-1/6' :
+                      interview.currentQuestionIndex + 1 === 2 ? 'w-2/6' :
+                      interview.currentQuestionIndex + 1 === 3 ? 'w-3/6' :
+                      interview.currentQuestionIndex + 1 === 4 ? 'w-4/6' :
+                      interview.currentQuestionIndex + 1 === 5 ? 'w-5/6' :
+                      'w-full'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Questions List */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Questions</h4>
+                {interview.questions.map((q, index) => {
+                  const isCompleted = index < interview.currentQuestionIndex;
+                  const isCurrent = index === interview.currentQuestionIndex;
+                  const answer = interview.answers.find(a => a.questionId === q.id);
+                  
+                  return (
+                    <div key={q.id} className={`p-2 rounded-lg border-2 transition-all ${
+                      isCurrent ? 'border-primary bg-primary/5' : 
+                      isCompleted ? 'border-green-200 bg-green-50 dark:bg-green-950' : 
+                      'border-muted bg-muted/30'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            isCurrent ? 'bg-primary text-primary-foreground' :
+                            isCompleted ? 'bg-green-500 text-white' : 
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium">
+                              Q{index + 1} - {q.category}
+                            </div>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {q.difficulty}
+                            </Badge>
+                          </div>
+                        </div>
+                        {isCompleted && answer && (
+                          <div className="text-xs text-right">
+                            <div className="font-medium text-green-600">
+                              {answer.score}/10
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Current Timer */}
+              {currentQuestion && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Time Remaining</span>
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${
+                    timeLeft <= 30 ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200' :
+                    timeLeft <= 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200' :
+                    'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200'
+                  }`}>
+                    <div className="text-2xl font-bold">{formatTime(timeLeft)}</div>
+                    <div className="text-xs">{currentQuestion.timeLimit}s total</div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg">
+                    Question {interview.currentQuestionIndex + 1} of {interview.questions.length}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {currentQuestion?.category || 'General'} • {currentQuestion?.difficulty} Level
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-sm font-medium">
+                  {interview.status.toUpperCase()}
+                </Badge>
+              </div>
+            </CardHeader>
+          </Card>
 
       {/* Current Question */}
       <Card>
@@ -328,18 +462,8 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
         </CardContent>
       </Card>
 
-      {/* Progress */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Progress</span>
-            <span>{interview.currentQuestionIndex + 1} / {interview.questions.length}</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div className={`bg-primary h-2 rounded-full transition-all duration-300 ${getProgressWidth()}`} />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ interface AppStore extends AppState {
   setActiveTab: (tab: 'interviewee' | 'interviewer') => void;
   
   // Candidate actions
-  createCandidate: (data: { name: string; email: string; phone: string; resumeContent?: string }) => Candidate;
+  createCandidate: (data: { name: string; email: string; phone: string; resumeContent?: string; skills?: string[]; experience?: string; education?: string; }) => Candidate;
   updateCandidate: (id: string, updates: Partial<Candidate>) => void;
   setCurrentCandidate: (candidate: Candidate | undefined) => void;
   
@@ -220,6 +220,9 @@ export const useAppStore = create<AppStore>()(
       partialize: (state) => ({
         candidates: state.candidates,
         interviews: state.interviews,
+        currentCandidate: state.currentCandidate,
+        currentInterview: state.currentInterview,
+        chatHistory: state.chatHistory,
         activeTab: state.activeTab,
       }),
     }

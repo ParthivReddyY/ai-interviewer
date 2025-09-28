@@ -57,6 +57,9 @@ export default function ResumeUpload() {
           email: data.email!,
           phone: data.phone!,
           resumeContent: data.rawText,
+          skills: data.skills,
+          experience: data.experience,
+          education: data.education,
         });
       } else {
         // Pre-fill manual data with extracted data
@@ -92,6 +95,9 @@ export default function ResumeUpload() {
       email: manualData.email,
       phone: manualData.phone,
       resumeContent: resumeData?.rawText,
+      skills: resumeData?.skills,
+      experience: resumeData?.experience,
+      education: resumeData?.education,
     });
   };
 
