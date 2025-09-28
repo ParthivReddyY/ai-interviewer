@@ -70,7 +70,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-slate-200/30">
       <div className="container mx-auto py-8">
-        {/* Premium Header Section */}
         <div className="text-center space-y-8 mb-12">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 border border-slate-300/50">

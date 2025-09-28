@@ -17,14 +17,14 @@ export interface Question {
   id: string;
   text: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  timeLimit: number; // in seconds
+  timeLimit: number; 
   category?: string;
 }
 
 export interface Answer {
   questionId: string;
   text: string;
-  timeSpent: number; // in seconds
+  timeSpent: number; 
   score?: number;
   feedback?: string;
   strengths?: string[];

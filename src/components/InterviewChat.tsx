@@ -45,24 +45,20 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
 
     setIsProcessingResults(true);
     
-    // Add processing message
     addChatMessage({
       type: 'system',
       content: '🔄 **Processing your interview results...**\n\nPlease wait while we:\n• Evaluate your answers with advanced AI\n• Calculate your final score\n• Generate personalized feedback\n\nThis may take a few moments.'
     });
 
     try {
-      // Evaluate all answers now
       const evaluationResult = await evaluateAnswersAction(interview.questions, interview.answers);
       
-      // Update interview with evaluated answers using the store method
       evaluationResult.detailedFeedback.forEach((evaluatedAnswer, index) => {
         updateAnswer(interview.id, index, evaluatedAnswer);
       });
 
       const finalScore = evaluationResult.overallScore;
 
-      // Generate final summary with AI
       let summary = '';
       try {
         summary = await generateSummaryAction(evaluationResult.detailedFeedback, finalScore);
@@ -71,16 +67,13 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
         summary = 'Interview completed successfully. Detailed feedback is not available at this time.';
       }
 
-      // Complete the interview
       completeInterview(interview.id, finalScore, summary);
 
-      // Calculate performance stats
       const questionsAnswered = interview.answers.length;
 
       const totalTimeAllowed = interview.questions.reduce((acc, q) => acc + q.timeLimit, 0);
       const totalTimeUsed = interview.answers.reduce((acc, ans) => acc + ans.timeSpent, 0);
       
-      // Determine performance level
       let performanceLevel = '';
       if (finalScore >= 8.5) performanceLevel = '🌟 Outstanding';
       else if (finalScore >= 7.5) performanceLevel = '🚀 Excellent';
@@ -88,7 +81,6 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
       else if (finalScore >= 5.0) performanceLevel = '📈 Average';
       else performanceLevel = '💪 Needs Improvement';
 
-      // Add comprehensive completion message
       addChatMessage({
         type: 'system',
         content: `🎉 **INTERVIEW COMPLETED!** 🎉
@@ -111,7 +103,6 @@ Thank you for completing this technical interview! Your responses have been save
 🎯 Switching to results view in 3 seconds...`,
       });
 
-      // Switch to interviewer tab to show results
       setTimeout(() => {
         setActiveTab('interviewer');
       }, 3000);
@@ -136,13 +127,11 @@ Thank you for completing this technical interview! Your responses have been save
     try {
       const timeSpent = currentQuestion.timeLimit - timeLeft;
       
-      // Add user message to chat
       addChatMessage({
         type: 'user',
         content: answerText,
       });
 
-      // Create initial answer object
       const answer: Answer = {
         questionId: currentQuestion.id,
         text: answerText,
@@ -153,26 +142,21 @@ Thank you for completing this technical interview! Your responses have been save
         improvements: []
       };
 
-      // Add answer to interview
       addAnswer(interview.id, answer);
 
-      // Add processing message
       addChatMessage({
         type: 'system',
         content: `✅ Answer submitted!\n\n⏱️ Time used: ${timeSpent}/${currentQuestion.timeLimit} seconds\n\n🤖 Getting AI feedback...`,
       });
 
-      // Clear the saved timer for current question
       const savedTimerKey = `timer_${interview.id}_${currentQuestion.id}`;
       localStorage.removeItem(savedTimerKey);
 
-      // Get quick AI evaluation (wait for completion)
       let evaluatedAnswer = answer;
       try {
         const { quickEvaluateAction } = await import('@/lib/actions');
         const evaluation = await quickEvaluateAction(currentQuestion, answer);
         
-        // Update answer with evaluation
         evaluatedAnswer = {
           ...answer,
           score: evaluation.score,
@@ -181,10 +165,8 @@ Thank you for completing this technical interview! Your responses have been save
           improvements: evaluation.improvements
         };
         
-        // Update answer in store
         addAnswer(interview.id, evaluatedAnswer);
         
-        // Add AI feedback message
         addChatMessage({
           type: 'ai',
           content: `🎯 **Quick Feedback:**\n\n**Score:** ${evaluation.score}/10\n\n**${evaluation.feedback}**\n\n✅ **Strength:** ${evaluation.strengths[0] || 'Good effort'}\n\n💡 **Tip:** ${evaluation.improvements[0] || 'Keep practicing'}`,
@@ -192,29 +174,23 @@ Thank you for completing this technical interview! Your responses have been save
         
       } catch (evalError) {
         console.error('Quick evaluation failed:', evalError);
-        // Add fallback message
         addChatMessage({
           type: 'system',
           content: `📝 Answer recorded successfully! Detailed evaluation will be provided at the end of the interview.`,
         });
       }
 
-      // Move to next question or complete interview  
       if (isLastQuestion) {
         addChatMessage({
           type: 'system',
           content: '🏁 That was the final question! Processing your interview results...',
         });
-        // Wait a bit longer to ensure feedback is visible
         setTimeout(() => completeInterviewProcess(), 3000);
       } else {
-        // Get the next question before moving to it
         const nextQ = interview.questions[interview.currentQuestionIndex + 1];
         
-        // Move to next question
         nextQuestion(interview.id);
         
-        // Reset the answered flag for the next question
         setTimeout(() => {
           setHasAnsweredCurrentQuestion(false);
         }, 100);
@@ -251,29 +227,22 @@ Thank you for completing this technical interview! Your responses have been save
     await submitAnswer(currentAnswer);
   }, [currentAnswer, submitAnswer]);
 
-  // Start timer when component mounts or question changes - with restoration support
   React.useEffect(() => {
     if (currentQuestion) {
-      // Reset the answered flag for the new question
       setHasAnsweredCurrentQuestion(false);
       
-      // Check if we have a saved timer state in localStorage
       const savedTimerKey = `timer_${interview?.id}_${currentQuestion.id}`;
       const savedTime = localStorage.getItem(savedTimerKey);
       
       if (savedTime && parseInt(savedTime) > 0) {
-        // Restore saved timer state
         setTimeLeft(parseInt(savedTime));
         setIsTimerRunning(true);
       } else {
-        // Start new timer
         setTimeLeft(currentQuestion.timeLimit);
         setIsTimerRunning(true);
       }
     }
-  }, [currentQuestion, interview?.id]); // Removed timeLeft from dependencies
-
-  // Save timer state to localStorage
+  }, [currentQuestion, interview?.id]); 
   React.useEffect(() => {
     if (currentQuestion && interview?.id && timeLeft > 0) {
       const savedTimerKey = `timer_${interview.id}_${currentQuestion.id}`;
@@ -281,7 +250,6 @@ Thank you for completing this technical interview! Your responses have been save
     }
   }, [timeLeft, currentQuestion, interview?.id]);
 
-  // Timer countdown
   React.useEffect(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -292,7 +260,6 @@ Thank you for completing this technical interview! Your responses have been save
         setTimeLeft(prev => {
           if (prev <= 1) {
             setIsTimerRunning(false);
-            // Use setTimeout to avoid state update during render
             setTimeout(() => {
               handleAutoSubmit();
             }, 0);
@@ -336,19 +303,15 @@ Thank you for completing this technical interview! Your responses have been save
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-
-
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Sidebar - Question Status */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Interview Progress</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Overall Progress */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span>Overall Progress</span>
@@ -368,7 +331,6 @@ Thank you for completing this technical interview! Your responses have been save
                 </div>
               </div>
 
-              {/* Questions List */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">Questions</h4>
                 {interview.questions.map((q, index) => {
@@ -405,7 +367,6 @@ Thank you for completing this technical interview! Your responses have been save
                 })}
               </div>
 
-              {/* Current Timer */}
               {currentQuestion && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
@@ -426,9 +387,7 @@ Thank you for completing this technical interview! Your responses have been save
           </Card>
         </div>
 
-        {/* Main Content */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Header */}
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -447,7 +406,6 @@ Thank you for completing this technical interview! Your responses have been save
             </CardHeader>
           </Card>
 
-      {/* Current Question */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Current Question</CardTitle>
@@ -460,7 +418,6 @@ Thank you for completing this technical interview! Your responses have been save
         </CardContent>
       </Card>
 
-      {/* Chat Messages */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -500,7 +457,6 @@ Thank you for completing this technical interview! Your responses have been save
         </CardContent>
       </Card>
 
-      {/* Answer Input */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Your Answer</CardTitle>

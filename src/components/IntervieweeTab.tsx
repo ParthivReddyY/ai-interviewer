@@ -9,7 +9,6 @@ import { InterviewChat } from "./InterviewChat";
 export default function IntervieweeTab() {
   const { currentCandidate, currentInterview } = useAppStore();
 
-  // If no candidate, show resume upload
   if (!currentCandidate) {
     return (
       <Card>
@@ -26,11 +25,9 @@ export default function IntervieweeTab() {
     );
   }
 
-  // If candidate exists but no interview, show data collection or interview start
   if (!currentInterview) {
     return <InterviewStart candidate={currentCandidate} />;
   }
 
-  // If both candidate and interview exist, show the interview interface
   return <InterviewChat interviewId={currentInterview.id} />;
 }

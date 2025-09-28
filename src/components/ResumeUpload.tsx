@@ -47,7 +47,6 @@ export default function ResumeUpload() {
       const data = await parseResume(file);
       setResumeData(data);
 
-      // Check for missing fields
       const missing: string[] = [];
       if (!data.name) missing.push("name");
       if (!data.email) missing.push("email");
@@ -55,7 +54,6 @@ export default function ResumeUpload() {
 
       setMissingFields(missing);
 
-      // Always show the form so users can review and edit extracted information
       setManualData({
         name: data.name || "",
         email: data.email || "",
@@ -72,13 +70,11 @@ export default function ResumeUpload() {
   };
 
   const handleCreateCandidate = () => {
-    // Validate all fields are present
     if (!manualData.name || !manualData.email || !manualData.phone) {
       setError("Please fill in all required fields");
       return;
     }
 
-    // Email validation
     if (!isValidEmail(manualData.email)) {
       setError("Please enter a valid email address");
       return;
@@ -95,7 +91,6 @@ export default function ResumeUpload() {
     });
   };
 
-  // If we have extracted data, show the review and edit form
   if (resumeData) {
     return (
       <div className="space-y-6">
@@ -110,7 +105,6 @@ export default function ResumeUpload() {
         </Alert>
 
         <div className="space-y-4">
-          {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -154,7 +148,6 @@ export default function ResumeUpload() {
             </div>
           </div>
 
-          {/* Enhanced Information */}
           <div className="space-y-4">
             <h4 className="font-medium text-muted-foreground">Additional Information (Optional)</h4>
             

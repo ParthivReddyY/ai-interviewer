@@ -26,7 +26,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
       setCurrentCandidate(candidate);
       setCurrentInterview(interview);
       
-      // Add welcome back message
       addChatMessage({
         type: 'system',
         content: `🎉 Welcome back, ${candidate.name}! Your interview session has been restored.\n\nYou were on question ${interview.currentQuestionIndex + 1} of ${interview.questions.length}. Let's continue where you left off.`
@@ -40,7 +39,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
   const handleStartNew = () => {
     setIsAnimating(true);
     setTimeout(() => {
-      // Reset the current session
       clearCurrentSession();
       onClose();
       setIsAnimating(false);
@@ -63,11 +61,8 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
   const progress = Math.round((questionsAnswered / totalQuestions) * 100);
   const nextQuestionIndex = interview.currentQuestionIndex + 1;
   
-  // Calculate time metrics
   const timeSpent = interview.answers.reduce((acc, ans) => acc + ans.timeSpent, 0);
   const avgTimePerQuestion = questionsAnswered > 0 ? Math.round(timeSpent / questionsAnswered) : 0;
-  
-  // Get performance indicator
   const getProgressStatus = () => {
     if (progress >= 80) return { color: 'text-green-500', bg: 'bg-green-100', label: 'Almost Done!' };
     if (progress >= 50) return { color: 'text-blue-500', bg: 'bg-blue-100', label: 'Good Progress' };
@@ -80,7 +75,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
-        {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
           <DialogHeader className="space-y-3">
             <DialogTitle className="flex items-center gap-3 text-xl">
@@ -96,7 +90,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Progress Overview Card */}
           <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-transparent">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
@@ -122,7 +115,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
             </CardContent>
           </Card>
 
-          {/* Session Details */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-3">
@@ -149,7 +141,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
             </Card>
           </div>
 
-          {/* Candidate Info */}
           <Card className="bg-muted/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -170,7 +161,6 @@ export function WelcomeBackModal({ isOpen, onClose, interview, candidate }: Welc
             </CardContent>
           </Card>
 
-          {/* Performance Preview */}
           {questionsAnswered > 0 && (
             <Card className="border-dashed">
               <CardContent className="p-4">

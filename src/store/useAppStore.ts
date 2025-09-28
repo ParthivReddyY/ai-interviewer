@@ -4,16 +4,13 @@ import { v4 as uuidv4 } from 'uuid';
 import type { AppState, Candidate, Interview, ChatMessage, Question, Answer } from '@/types';
 
 interface AppStore extends AppState {
-  // Actions
   setActiveTab: (tab: 'interviewee' | 'interviewer') => void;
   
-  // Candidate actions
   createCandidate: (data: { name: string; email: string; phone: string; resumeContent?: string; skills?: string[]; experience?: string; education?: string; }) => Candidate;
   updateCandidate: (id: string, updates: Partial<Candidate>) => void;
   updateCandidateStatus: (id: string, status: 'pending' | 'selected' | 'rejected' | 'under-review', notes?: string) => void;
   setCurrentCandidate: (candidate: Candidate | undefined) => void;
   
-  // Interview actions
   createInterview: (candidateId: string) => Interview;
   updateInterview: (id: string, updates: Partial<Interview>) => void;
   setCurrentInterview: (interview: Interview | undefined) => void;
@@ -23,11 +20,9 @@ interface AppStore extends AppState {
   nextQuestion: (interviewId: string) => void;
   completeInterview: (interviewId: string, finalScore: number, summary: string) => void;
   
-  // Chat actions
   addChatMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
   clearChatHistory: () => void;
   
-  // Utility actions
   reset: () => void;
   clearCurrentSession: () => void;
   clearAllData: () => void;
@@ -228,7 +223,6 @@ export const useAppStore = create<AppStore>()(
                 : state.currentInterview,
           };
 
-          // Clear current session after completion to prevent welcome back modal
           return {
             ...updatedState,
             currentCandidate: undefined,
@@ -268,7 +262,6 @@ export const useAppStore = create<AppStore>()(
         })),
 
       clearAllData: () => {
-        // Clear localStorage timer data
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -278,7 +271,6 @@ export const useAppStore = create<AppStore>()(
         }
         keysToRemove.forEach(key => localStorage.removeItem(key));
         
-        // Reset store to initial state
         set(initialState);
       },
     }),

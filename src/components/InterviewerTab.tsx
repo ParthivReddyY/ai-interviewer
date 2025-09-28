@@ -25,7 +25,6 @@ export default function InterviewerTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  // Get completed interviews with candidate data
   const completedInterviews = interviews
     .filter((interview) => interview.status === "completed")
     .map((interview) => ({
@@ -34,7 +33,6 @@ export default function InterviewerTab() {
     }))
     .filter((item) => item.candidate);
 
-  // Filter and sort candidates
   const filteredCandidates = completedInterviews
     .filter((item) => {
       const candidate = item.candidate!;
@@ -62,7 +60,6 @@ export default function InterviewerTab() {
       }
     });
 
-  // Pagination
   const totalPages = Math.ceil(filteredCandidates.length / CANDIDATES_PER_PAGE);
   const startIndex = (currentPage - 1) * CANDIDATES_PER_PAGE;
   const paginatedCandidates = filteredCandidates.slice(startIndex, startIndex + CANDIDATES_PER_PAGE);
@@ -113,13 +110,11 @@ export default function InterviewerTab() {
     const totalTimeSpent = interview?.answers.reduce((acc, ans) => acc + ans.timeSpent, 0) || 0;
     const totalTimeLimit = interview?.questions.reduce((acc, q) => acc + q.timeLimit, 0) || 0;
     
-    // Calculate performance metrics
     const completionRate = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
     const averageScore = (interview?.answers?.length || 0) > 0 
       ? interview!.answers.reduce((acc, ans) => acc + (ans.score || 0), 0) / interview!.answers.length 
       : 0;
 
-    // Categorize performance
     const getPerformanceLevel = (score: number) => {
       if (score >= 8.5) return { level: "Outstanding", color: "bg-emerald-500", icon: Trophy };
       if (score >= 7.5) return { level: "Excellent", color: "bg-blue-500", icon: Award };
@@ -133,7 +128,6 @@ export default function InterviewerTab() {
 
     return (
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-start">
           <Button variant="outline" onClick={() => setSelectedCandidate(null)} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -141,7 +135,6 @@ export default function InterviewerTab() {
           </Button>
         </div>
 
-        {/* Enhanced Candidate Info Card */}
         <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-white to-blue-50/30">
           <CardHeader className="pb-6">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -164,7 +157,6 @@ export default function InterviewerTab() {
                 </div>
               </div>
 
-              {/* Score Display and Quick Actions */}
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg ${getScoreColor(finalScore)}`}>
@@ -173,7 +165,6 @@ export default function InterviewerTab() {
                   <div className="text-sm text-slate-500 mt-2 font-medium">Overall Score</div>
                 </div>
 
-                {/* Quick Action Buttons */}
                 <div className="flex flex-col gap-2">
                   <Button
                     size="sm"
@@ -211,7 +202,6 @@ export default function InterviewerTab() {
           </CardHeader>
         </Card>
 
-        {/* Performance Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
@@ -246,7 +236,6 @@ export default function InterviewerTab() {
           </Card>
         </div>
 
-        {/* Interview Summary */}
         {interview?.summary && (
           <Card>
             <CardHeader>
@@ -261,7 +250,6 @@ export default function InterviewerTab() {
           </Card>
         )}
 
-        {/* Detailed Question Analysis */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -372,7 +360,6 @@ export default function InterviewerTab() {
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Dashboard Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
@@ -443,7 +430,6 @@ export default function InterviewerTab() {
         </Card>
       </div>
 
-      {/* Dashboard Header */}
       <Card className="bg-gradient-to-r from-slate-50 to-white border border-slate-200">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -507,11 +493,9 @@ export default function InterviewerTab() {
         </CardContent>
       </Card>
 
-      {/* Enhanced Search and Filters */}
       <div className="space-y-6">
         <div className="bg-slate-50 rounded-xl p-6 mb-6 border border-slate-200">
           <div className="flex flex-col lg:flex-row gap-4">
-              {/* Enhanced Search Input */}
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                 <Input
@@ -532,7 +516,6 @@ export default function InterviewerTab() {
                 )}
               </div>
               
-              {/* Filter Controls */}
               <div className="flex gap-3">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-48 py-3 bg-white border-slate-300 focus:border-slate-500 shadow-sm">
@@ -612,7 +595,6 @@ export default function InterviewerTab() {
               </div>
             </div>
             
-            {/* Active Filters Display */}
             {(searchTerm || filterStatus !== "all") && (
               <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
                 <span className="text-sm font-medium text-slate-600">Active filters:</span>
@@ -683,7 +665,6 @@ export default function InterviewerTab() {
             </Card>
           ) : (
             <>
-              {/* Professional Candidate List */}
               <div className="space-y-3">
                 {paginatedCandidates.map((item) => {
                   const candidate = item.candidate!;
@@ -701,11 +682,9 @@ export default function InterviewerTab() {
                     <Card key={candidate.id} className="group hover:shadow-xl transition-all duration-300 hover:scale-[1.01] border border-slate-200 hover:border-blue-300 bg-white">
                       <CardContent className="p-0">
                         <div className="flex items-center">
-                          {/* Status Color Bar */}
                           <div className={`w-1 h-24 ${candidate.status === 'selected' ? 'bg-green-500' : candidate.status === 'rejected' ? 'bg-red-500' : candidate.status === 'under-review' ? 'bg-blue-500' : 'bg-gray-300'} rounded-l-lg flex-shrink-0`} />
                           
                           <div className="flex items-center justify-between w-full p-6">
-                            {/* Left Section - Avatar & Basic Info */}
                             <div className="flex items-center space-x-4 flex-1 min-w-0">
                               <Avatar className="h-16 w-16 ring-3 ring-white shadow-lg flex-shrink-0">
                                 <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700">
@@ -722,7 +701,6 @@ export default function InterviewerTab() {
                                 </div>
                                 <p className="text-slate-600 text-sm truncate mb-3 font-medium">{candidate.email}</p>
                                 
-                                {/* Performance & Timing Info */}
                                 <div className="flex items-center gap-6 text-sm">
                                   <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${performance.bgColor} ${performance.borderColor} border`}>
                                     <Trophy className={`h-4 w-4 ${performance.color}`} />
@@ -748,9 +726,7 @@ export default function InterviewerTab() {
                               </div>
                             </div>
 
-                            {/* Middle Section - Key Metrics */}
                             <div className="hidden lg:flex items-center gap-8 px-6 flex-shrink-0">
-                              {/* Score Visualization */}
                               <div className="text-center">
                                 <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${getScoreColor(item.finalScore || 0)} relative`}>
                                   <span>{(item.finalScore || 0).toFixed(1)}</span>
@@ -761,7 +737,6 @@ export default function InterviewerTab() {
                                 <p className="text-xs text-slate-600 mt-2 font-semibold">Overall Score</p>
                               </div>
                               
-                              {/* Quick Stats */}
                               <div className="text-center space-y-1">
                                 <div className="text-2xl font-bold text-slate-700">
                                   {item.questions?.length || 0}
@@ -774,9 +749,7 @@ export default function InterviewerTab() {
                               </div>
                             </div>
 
-                            {/* Right Section - Actions */}
                             <div className="flex items-center gap-3 flex-shrink-0">
-                              {/* Primary Action - View Details */}
                               <Button
                                 onClick={() => setSelectedCandidate(candidate)}
                                 className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
@@ -785,7 +758,6 @@ export default function InterviewerTab() {
                                 <span className="font-semibold">View Details</span>
                               </Button>
                               
-                              {/* Status Action Dropdown */}
                               <div className="flex flex-col gap-2">
                                 <div className="flex gap-1">
                                   <Button
@@ -831,7 +803,6 @@ export default function InterviewerTab() {
                                   </Button>
                                 </div>
                                 
-                                {/* Status Labels for Mobile */}
                                 <div className="lg:hidden text-xs text-center">
                                   <span className="text-slate-500 font-medium">Quick Actions</span>
                                 </div>
@@ -845,7 +816,6 @@ export default function InterviewerTab() {
                 })}
               </div>
 
-              {/* Enhanced Pagination */}
               {totalPages > 1 && (
                 <Card className="mt-6">
                   <CardContent className="py-4">

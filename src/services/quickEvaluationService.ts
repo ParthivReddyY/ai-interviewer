@@ -3,9 +3,7 @@
 import { generateContentWithRetry } from './aiConfig';
 import type { Question, Answer } from '@/types';
 
-/**
- * Quick evaluation for immediate feedback after each question
- */
+
 export async function quickEvaluate(
   question: Question,
   answer: Answer
@@ -27,7 +25,7 @@ Give quick feedback in JSON format:
   "improvements": ["one improvement tip"]
 }`;
 
-    const text = await generateContentWithRetry(prompt, 1); // Only 1 retry for quick feedback
+    const text = await generateContentWithRetry(prompt, 1); 
     const jsonMatch = text.match(/\{[\s\S]*?\}/);
     
     if (!jsonMatch) {
@@ -55,25 +53,21 @@ function getQuickFallbackEvaluation(answer: Answer, question: Question): { score
   const hasCode = /```|`\w+`|function|const|let|var|class/.test(answer.text);
   const hasTechnicalTerms = /(api|database|component|state|props|async|await|promise)/.test(answer.text.toLowerCase());
   
-  let score = 5; // Base score
+  let score = 5; 
   
-  // Word count evaluation
   if (wordCount >= 30) score += 1.5;
   else if (wordCount >= 15) score += 1;
   else if (wordCount < 5) score -= 1;
   
-  // Time efficiency
   if (timeRatio <= 0.8) score += 0.5;
   else if (timeRatio > 1.2) score -= 0.5;
   
-  // Technical content
   if (hasCode) score += 1;
   if (hasTechnicalTerms) score += 0.5;
   
-  // Difficulty adjustment
   if (question.difficulty === 'hard' && score > 6) score += 0.5;
   
-  score = Math.max(1, Math.min(10, Math.round(score * 2) / 2)); // Round to nearest 0.5
+  score = Math.max(1, Math.min(10, Math.round(score * 2) / 2)); 
   
   const feedback = score >= 8 ? 'Excellent answer with good technical depth!' :
                    score >= 6 ? 'Good response, shows understanding of the topic.' :

@@ -12,19 +12,16 @@ export interface ResumeData {
 
 import { EMAIL_REGEX, PHONE_REGEX, isValidEmail, cleanPhoneNumber } from './validation';
 
-// Name extraction patterns (improved for various resume formats)
 const NAME_PATTERNS = [
-  /^([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/m, // First Last [Middle] at start
-  /Name:\s*([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i, // "Name: First Last [Middle]"
-  /([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*\n/m, // Name followed by newline
-  /^([A-Z]+\s[A-Z]+(?:\s[A-Z]+)?)/m, // ALL CAPS names
-  /([A-Z][a-zA-Z]+ [A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)?)\s*$/m, // Name at end of line
+  /^([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/m, 
+  /Name:\s*([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i, 
+  /([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*\n/m, 
+  /^([A-Z]+\s[A-Z]+(?:\s[A-Z]+)?)/m, 
+  /([A-Z][a-zA-Z]+ [A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)?)\s*$/m, 
 ];
 
 export async function parsePDF(file: File): Promise<ResumeData> {
-  // Check if we're in the browser environment
   if (typeof window === 'undefined') {
-    // Server-side fallback
     return {
       name: undefined,
       email: undefined,
@@ -34,11 +31,9 @@ export async function parsePDF(file: File): Promise<ResumeData> {
   }
 
   try {
-    // Dynamic import to avoid SSR issues
     const pdfjs = await import('pdfjs-dist');
     const { getDocument, GlobalWorkerOptions } = pdfjs;
     
-    // Configure PDF.js worker - use a reliable CDN with the correct version
     GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs`;
     
     const arrayBuffer = await file.arrayBuffer();
@@ -46,12 +41,10 @@ export async function parsePDF(file: File): Promise<ResumeData> {
     
     let fullText = '';
     
-    // Extract text from all pages
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       
-      // Combine all text items
       const pageText = textContent.items
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((item: any) => item.str)
@@ -69,7 +62,6 @@ export async function parsePDF(file: File): Promise<ResumeData> {
     return await extractResumeData(fullText);
   } catch (error) {
     console.error('Error parsing PDF:', error);
-    // Fallback for PDFs that can't be parsed
     return {
       name: undefined,
       email: undefined,
@@ -83,14 +75,12 @@ export async function parseDOCX(file: File): Promise<ResumeData> {
   try {
     const arrayBuffer = await file.arrayBuffer();
     
-    // Use mammoth to extract text with better formatting
     const result = await mammoth.extractRawText({ arrayBuffer });
     
     if (!result.value.trim()) {
       throw new Error('Could not extract text from DOCX file. The file might be corrupted or empty.');
     }
     
-    // Log any conversion messages for debugging
     if (result.messages.length > 0) {
       console.warn('DOCX conversion messages:', result.messages);
     }
@@ -105,19 +95,15 @@ export async function parseDOCX(file: File): Promise<ResumeData> {
 async function extractResumeData(text: string): Promise<ResumeData> {
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   
-  // Enhanced extraction with AI-powered analysis fallback
   const basicData = extractBasicInfo(text, lines);
   
-  // Try AI-powered extraction if basic extraction fails or is incomplete
   const missingCriticalInfo = !basicData.name || !basicData.email || !basicData.phone;
   
   if (missingCriticalInfo && typeof window !== 'undefined') {
     try {
-      // Use AI-based parsing for enhancement
       const { parseResumeAction } = await import('@/lib/actions');
       const aiEnhanced = await parseResumeAction(text);
       
-      // Merge AI data with basic data, preferring valid non-empty values
       return {
         name: aiEnhanced.name || basicData.name,
         email: aiEnhanced.email || basicData.email,
@@ -136,18 +122,14 @@ async function extractResumeData(text: string): Promise<ResumeData> {
 }
 
 function extractBasicInfo(text: string, lines: string[]): ResumeData {
-  // Extract email with improved regex
   const emailMatches = text.match(EMAIL_REGEX);
   const email = emailMatches ? emailMatches[0] : undefined;
   
-  // Extract phone with improved regex
   const phoneMatches = text.match(PHONE_REGEX);
   const phone = phoneMatches ? phoneMatches[0] : undefined;
   
-  // Extract name - try multiple patterns
   let name: string | undefined;
   
-  // Try various patterns for name extraction
   for (const pattern of NAME_PATTERNS) {
     const match = text.match(pattern);
     if (match && match[1]) {
@@ -156,11 +138,9 @@ function extractBasicInfo(text: string, lines: string[]): ResumeData {
     }
   }
   
-  // If no name found, try the first line that looks like a name
   if (!name && lines.length > 0) {
     for (let i = 0; i < Math.min(5, lines.length); i++) {
       const line = lines[i];
-      // Check if line looks like a name (2-4 words, no numbers, reasonable length)
       const words = line.split(/\s+/);
       if (words.length >= 2 && words.length <= 4 && 
           line.length < 50 && line.length > 5 &&
@@ -174,10 +154,8 @@ function extractBasicInfo(text: string, lines: string[]): ResumeData {
     }
   }
   
-  // Additional email validation
   const validEmail = email && isValidEmail(email) ? email : undefined;
   
-  // Clean up phone number
   const cleanPhone = phone ? cleanPhoneNumber(phone) : undefined;
   
   return {
@@ -209,7 +187,7 @@ export async function parseResume(file: File): Promise<ResumeData> {
     throw new Error('Invalid file type. Only PDF and DOCX files are allowed.');
   }
   
-  if (file.size > 10 * 1024 * 1024) { // 10MB limit
+  if (file.size > 10 * 1024 * 1024) { 
     throw new Error('File size too large. Maximum size is 10MB.');
   }
   

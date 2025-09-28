@@ -18,7 +18,6 @@ export async function generateQuestions(
       context += ` Skills: ${resumeData.skills.slice(0, 5).join(', ')}.`;
     }
 
-    // Add randomization for variety
     const sessionId = Math.random().toString(36).substring(2, 8);
     
     const prompt = `${context}
@@ -170,7 +169,6 @@ function getFallbackQuestions(): Question[] {
     }
   ];
 
-  // Shuffle and select questions to ensure variety
   const easyQuestions = allQuestions.filter(q => q.difficulty === 'easy').sort(() => Math.random() - 0.5);
   const mediumQuestions = allQuestions.filter(q => q.difficulty === 'medium').sort(() => Math.random() - 0.5);
   const hardQuestions = allQuestions.filter(q => q.difficulty === 'hard').sort(() => Math.random() - 0.5);
