@@ -9,6 +9,8 @@ export interface Candidate {
   education?: string;
   createdAt: Date;
   completedAt?: Date;
+  status?: 'pending' | 'selected' | 'rejected' | 'under-review';
+  notes?: string;
 }
 
 export interface Question {

@@ -7,7 +7,7 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Clock, Send, MessageCircle, User } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { aiService } from '@/services/aiService';
+import { evaluateAnswersAction, generateSummaryAction } from '@/lib/actions';
 import type { Answer, ChatMessage } from '@/types';
 
 interface InterviewChatProps {
@@ -20,6 +20,7 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
     chatHistory,
     addChatMessage,
     addAnswer,
+    updateAnswer,
     nextQuestion,
     completeInterview,
     setActiveTab,
@@ -32,6 +33,9 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
   const [timeLeft, setTimeLeft] = React.useState(0);
   const [isTimerRunning, setIsTimerRunning] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isProcessingResults, setIsProcessingResults] = React.useState(false);
+  const [hasAnsweredCurrentQuestion, setHasAnsweredCurrentQuestion] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const currentQuestion = interview?.questions[interview.currentQuestionIndex];
   const isLastQuestion = interview ? interview.currentQuestionIndex === interview.questions.length - 1 : false;
@@ -39,13 +43,21 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
   const completeInterviewProcess = React.useCallback(async () => {
     if (!interview) return;
 
+    setIsProcessingResults(true);
+    
+    // Add processing message
+    addChatMessage({
+      type: 'system',
+      content: '🔄 **Processing your interview results...**\n\nPlease wait while we:\n• Evaluate your answers with advanced AI\n• Calculate your final score\n• Generate personalized feedback\n\nThis may take a few moments.'
+    });
+
     try {
       // Evaluate all answers now
-      const evaluationResult = await aiService.evaluateAllAnswers(interview.questions, interview.answers);
+      const evaluationResult = await evaluateAnswersAction(interview.questions, interview.answers);
       
-      // Update interview with evaluated answers
+      // Update interview with evaluated answers using the store method
       evaluationResult.detailedFeedback.forEach((evaluatedAnswer, index) => {
-        interview.answers[index] = evaluatedAnswer;
+        updateAnswer(interview.id, index, evaluatedAnswer);
       });
 
       const finalScore = evaluationResult.overallScore;
@@ -53,7 +65,7 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
       // Generate final summary with AI
       let summary = '';
       try {
-        summary = await aiService.generateFinalSummary(evaluationResult.detailedFeedback, finalScore);
+        summary = await generateSummaryAction(evaluationResult.detailedFeedback, finalScore);
       } catch (error) {
         console.error('Error generating summary:', error);
         summary = 'Interview completed successfully. Detailed feedback is not available at this time.';
@@ -109,79 +121,122 @@ Thank you for completing this technical interview! Your responses have been save
         type: 'system',
         content: 'There was an error completing the interview. Please try again.',
       });
+    } finally {
+      setIsProcessingResults(false);
     }
-  }, [interview, completeInterview, addChatMessage, setActiveTab]);
+  }, [interview, completeInterview, addChatMessage, setActiveTab, updateAnswer]);
 
   const submitAnswer = React.useCallback(async (answerText: string) => {
-    if (isSubmitting || !currentQuestion || !interview) return;
+    if (isSubmitting || !currentQuestion || !interview || hasAnsweredCurrentQuestion) return;
 
     setIsSubmitting(true);
+    setHasAnsweredCurrentQuestion(true);
     setIsTimerRunning(false);
 
-    // Use setTimeout to defer state updates and avoid the setState during render issue
-    setTimeout(() => {
+    try {
+      const timeSpent = currentQuestion.timeLimit - timeLeft;
+      
+      // Add user message to chat
+      addChatMessage({
+        type: 'user',
+        content: answerText,
+      });
+
+      // Create initial answer object
+      const answer: Answer = {
+        questionId: currentQuestion.id,
+        text: answerText,
+        timeSpent: timeSpent,
+        score: 0,
+        feedback: 'Processing your answer...',
+        strengths: [],
+        improvements: []
+      };
+
+      // Add answer to interview
+      addAnswer(interview.id, answer);
+
+      // Add processing message
+      addChatMessage({
+        type: 'system',
+        content: `✅ Answer submitted!\n\n⏱️ Time used: ${timeSpent}/${currentQuestion.timeLimit} seconds\n\n🤖 Getting AI feedback...`,
+      });
+
+      // Clear the saved timer for current question
+      const savedTimerKey = `timer_${interview.id}_${currentQuestion.id}`;
+      localStorage.removeItem(savedTimerKey);
+
+      // Get quick AI evaluation (wait for completion)
+      let evaluatedAnswer = answer;
       try {
-        const timeSpent = currentQuestion.timeLimit - timeLeft;
+        const { quickEvaluateAction } = await import('@/lib/actions');
+        const evaluation = await quickEvaluateAction(currentQuestion, answer);
         
-        // Add user message to chat
-        addChatMessage({
-          type: 'user',
-          content: answerText,
-        });
-
-        // Create answer object without evaluation
-        const answer: Answer = {
-          questionId: currentQuestion.id,
-          text: answerText,
-          timeSpent: timeSpent,
-          score: 0,
-          feedback: 'Answer recorded. Evaluation will be provided at the end.',
-          strengths: [],
-          improvements: []
+        // Update answer with evaluation
+        evaluatedAnswer = {
+          ...answer,
+          score: evaluation.score,
+          feedback: evaluation.feedback,
+          strengths: evaluation.strengths,
+          improvements: evaluation.improvements
         };
-
-        // Add answer to interview
-        addAnswer(interview.id, answer);
-
-        // Add simple confirmation message
+        
+        // Update answer in store
+        addAnswer(interview.id, evaluatedAnswer);
+        
+        // Add AI feedback message
+        addChatMessage({
+          type: 'ai',
+          content: `🎯 **Quick Feedback:**\n\n**Score:** ${evaluation.score}/10\n\n**${evaluation.feedback}**\n\n✅ **Strength:** ${evaluation.strengths[0] || 'Good effort'}\n\n💡 **Tip:** ${evaluation.improvements[0] || 'Keep practicing'}`,
+        });
+        
+      } catch (evalError) {
+        console.error('Quick evaluation failed:', evalError);
+        // Add fallback message
         addChatMessage({
           type: 'system',
-          content: `✅ Answer submitted successfully!\n\n⏱️ Time used: ${timeSpent}/${currentQuestion.timeLimit} seconds\n\nYour answer has been recorded. Continue to the next question.`,
+          content: `📝 Answer recorded successfully! Detailed evaluation will be provided at the end of the interview.`,
         });
+      }
 
-        // Move to next question or complete interview
-        if (isLastQuestion) {
-          addChatMessage({
-            type: 'system',
-            content: '🏁 That was the final question! Processing your interview results...',
-          });
-          setTimeout(() => completeInterviewProcess(), 2000);
-        } else {
-          // Move to next question
-          nextQuestion(interview.id);
-          
-          const nextQ = interview.questions[interview.currentQuestionIndex + 1];
-          if (nextQ) {
+      // Move to next question or complete interview  
+      if (isLastQuestion) {
+        addChatMessage({
+          type: 'system',
+          content: '🏁 That was the final question! Processing your interview results...',
+        });
+        // Wait a bit longer to ensure feedback is visible
+        setTimeout(() => completeInterviewProcess(), 3000);
+      } else {
+        // Get the next question before moving to it
+        const nextQ = interview.questions[interview.currentQuestionIndex + 1];
+        
+        // Move to next question
+        nextQuestion(interview.id);
+        
+        // Reset the answered flag for the next question
+        setTimeout(() => {
+          setHasAnsweredCurrentQuestion(false);
+        }, 100);
+        
+        if (nextQ) {
           addChatMessage({
             type: 'ai',
             content: `Great work! Let's continue with question ${interview.currentQuestionIndex + 2} of ${interview.questions.length}:\n\n📋 Category: ${nextQ.category || 'General'}\n🎯 Difficulty: ${nextQ.difficulty}\n\n❓ ${nextQ.text}\n\nYou have ${nextQ.timeLimit} seconds to answer. Take your time and provide a detailed response.`,
           });
-          setTimeLeft(nextQ.timeLimit);
-          setIsTimerRunning(true);
         }
       }
-      } catch (error) {
-        console.error('Error submitting answer:', error);
-        addChatMessage({
-          type: 'system',
-          content: 'There was an error submitting your answer. Please try again.',
-        });
-      } finally {
-        setIsSubmitting(false);
-        setCurrentAnswer("");
-      }
-    }, 0);
-  }, [isSubmitting, currentQuestion, interview, timeLeft, addChatMessage, addAnswer, isLastQuestion, completeInterviewProcess, nextQuestion]);
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      addChatMessage({
+        type: 'system',
+        content: 'There was an error submitting your answer. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+      setCurrentAnswer("");
+    }
+  }, [isSubmitting, currentQuestion, interview, timeLeft, addChatMessage, addAnswer, isLastQuestion, completeInterviewProcess, nextQuestion, hasAnsweredCurrentQuestion]);
 
   const handleAutoSubmit = React.useCallback(async () => {
     if (!currentAnswer.trim()) {
@@ -199,6 +254,9 @@ Thank you for completing this technical interview! Your responses have been save
   // Start timer when component mounts or question changes - with restoration support
   React.useEffect(() => {
     if (currentQuestion) {
+      // Reset the answered flag for the new question
+      setHasAnsweredCurrentQuestion(false);
+      
       // Check if we have a saved timer state in localStorage
       const savedTimerKey = `timer_${interview?.id}_${currentQuestion.id}`;
       const savedTime = localStorage.getItem(savedTimerKey);
@@ -207,13 +265,13 @@ Thank you for completing this technical interview! Your responses have been save
         // Restore saved timer state
         setTimeLeft(parseInt(savedTime));
         setIsTimerRunning(true);
-      } else if (timeLeft === 0) {
+      } else {
         // Start new timer
         setTimeLeft(currentQuestion.timeLimit);
         setIsTimerRunning(true);
       }
     }
-  }, [currentQuestion, timeLeft, interview?.id]);
+  }, [currentQuestion, interview?.id]); // Removed timeLeft from dependencies
 
   // Save timer state to localStorage
   React.useEffect(() => {
@@ -225,14 +283,19 @@ Thank you for completing this technical interview! Your responses have been save
 
   // Timer countdown
   React.useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
     if (isTimerRunning && timeLeft > 0) {
-      intervalId = setInterval(() => {
+      timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             setIsTimerRunning(false);
-            handleAutoSubmit();
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => {
+              handleAutoSubmit();
+            }, 0);
             return 0;
           }
           return prev - 1;
@@ -241,16 +304,28 @@ Thank you for completing this technical interview! Your responses have been save
     }
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [timeLeft, isTimerRunning, handleAutoSubmit]);
+  }, [isTimerRunning, timeLeft, handleAutoSubmit]);
 
-  if (!interview || !currentQuestion) {
+  if (!interview) {
     return (
-      <div className="p-4">
-        <p>Interview not found or no questions available.</p>
+      <div className="text-center p-8">
+        <p className="text-muted-foreground">Interview not found.</p>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="text-center p-8">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="text-muted-foreground">Preparing your next question...</p>
+        </div>
       </div>
     );
   }
@@ -299,7 +374,6 @@ Thank you for completing this technical interview! Your responses have been save
                 {interview.questions.map((q, index) => {
                   const isCompleted = index < interview.currentQuestionIndex;
                   const isCurrent = index === interview.currentQuestionIndex;
-                  const answer = interview.answers.find(a => a.questionId === q.id);
                   
                   return (
                     <div key={q.id} className={`p-2 rounded-lg border-2 transition-all ${
@@ -325,13 +399,6 @@ Thank you for completing this technical interview! Your responses have been save
                             </Badge>
                           </div>
                         </div>
-                        {isCompleted && answer && (
-                          <div className="text-xs text-right">
-                            <div className="font-medium text-green-600">
-                              {answer.score}/10
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -452,11 +519,20 @@ Thank you for completing this technical interview! Your responses have been save
             </p>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !currentAnswer.trim() || timeLeft === 0}
+              disabled={isSubmitting || !currentAnswer.trim() || timeLeft === 0 || isProcessingResults}
               className="flex items-center gap-2"
             >
-              <Send className="h-4 w-4" />
-              Submit Answer
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Submit Answer
+                </>
+              )}
             </Button>
           </div>
         </CardContent>

@@ -10,11 +10,7 @@ export interface ResumeData {
   education?: string;
 }
 
-// Email regex pattern - more comprehensive
-const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-
-// Phone regex patterns (supports various international formats)
-const PHONE_REGEX = /(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})|(?:\+\d{1,3}[-.\s]?)?(?:\(?\d{1,4}\)?[-.\s]?)?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g;
+import { EMAIL_REGEX, PHONE_REGEX, isValidEmail, cleanPhoneNumber } from './validation';
 
 // Name extraction patterns (improved for various resume formats)
 const NAME_PATTERNS = [
@@ -115,13 +111,24 @@ async function extractResumeData(text: string): Promise<ResumeData> {
   // Try AI-powered extraction if basic extraction fails or is incomplete
   const missingCriticalInfo = !basicData.name || !basicData.email || !basicData.phone;
   
-  if (missingCriticalInfo) {
+  if (missingCriticalInfo && typeof window !== 'undefined') {
     try {
-      const aiEnhanced = await enhanceWithAI(text, basicData);
-      return aiEnhanced;
+      // Use AI-based parsing for enhancement
+      const { parseResumeAction } = await import('@/lib/actions');
+      const aiEnhanced = await parseResumeAction(text);
+      
+      // Merge AI data with basic data, preferring valid non-empty values
+      return {
+        name: aiEnhanced.name || basicData.name,
+        email: aiEnhanced.email || basicData.email,
+        phone: aiEnhanced.phone || basicData.phone,
+        rawText: text,
+        skills: aiEnhanced.skills || basicData.skills,
+        experience: aiEnhanced.experience || basicData.experience,
+        education: aiEnhanced.education || basicData.education,
+      };
     } catch (error) {
       console.log('AI enhancement failed, using basic extraction:', error);
-      return basicData;
     }
   }
   
@@ -168,127 +175,20 @@ function extractBasicInfo(text: string, lines: string[]): ResumeData {
   }
   
   // Additional email validation
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    // Invalid email format, clear it
-  }
+  const validEmail = email && isValidEmail(email) ? email : undefined;
   
   // Clean up phone number
-  let cleanPhone = phone;
-  if (cleanPhone) {
-    // Remove extra formatting and keep only digits and basic formatting
-    cleanPhone = cleanPhone.replace(/[^\d\-\(\)\+\s]/g, '');
-  }
+  const cleanPhone = phone ? cleanPhoneNumber(phone) : undefined;
   
   return {
     name,
-    email,
+    email: validEmail,
     phone: cleanPhone,
     rawText: text,
   };
 }
 
-async function enhanceWithAI(text: string, basicData: ResumeData): Promise<ResumeData> {
-  // Only use AI if we're in browser and have missing critical info
-  if (typeof window === 'undefined') {
-    return basicData;
-  }
 
-  try {
-    // Dynamic import to avoid SSR issues
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    
-    const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim();
-    if (!API_KEY) {
-      return basicData;
-    }
-
-    const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const prompt = `
-      You are an expert resume parser. Analyze this resume text and extract structured information.
-      
-      RESUME TEXT:
-      ${text.slice(0, 3000)}
-      
-      CURRENT EXTRACTED DATA:
-      Name: ${basicData.name || 'Not found'}
-      Email: ${basicData.email || 'Not found'}
-      Phone: ${basicData.phone || 'Not found'}
-      
-      INSTRUCTIONS:
-      1. Extract or improve the person's full name (avoid company names, headers, or titles)
-      2. Find valid email address(es) 
-      3. Locate phone number(s) in any format
-      4. Identify key technical and soft skills
-      5. Summarize work experience and key achievements
-      6. Extract education details (degrees, institutions, years)
-      
-      IMPORTANT: 
-      - Only extract information that is clearly present in the text
-      - If information is missing or unclear, use null or empty array
-      - Focus on accuracy over completeness
-      - For skills, prioritize technical skills but include important soft skills
-      
-      Return ONLY valid JSON in this exact format:
-      {
-        "name": "Full Name or null",
-        "email": "email@domain.com or null", 
-        "phone": "+1-555-0123 or null",
-        "skills": ["JavaScript", "React", "Python", "Leadership"],
-        "experience": "Brief summary of work experience and key achievements",
-        "education": "Degree, Institution, Year - multiple entries separated by semicolons"
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const aiText = response.text();
-    
-    // Extract JSON from AI response with multiple patterns
-    let jsonText = '';
-    
-    // Try different JSON extraction patterns
-    let jsonMatch = aiText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    } else {
-      jsonMatch = aiText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[0];
-      }
-    }
-    
-    if (jsonText) {
-      try {
-        const aiData = JSON.parse(jsonText);
-        
-        // Validate and clean AI data
-        const cleanName = aiData.name && aiData.name !== 'null' ? aiData.name.trim() : null;
-        const cleanEmail = aiData.email && aiData.email !== 'null' && aiData.email.includes('@') ? aiData.email.trim() : null;
-        const cleanPhone = aiData.phone && aiData.phone !== 'null' ? aiData.phone.trim() : null;
-        
-        // Merge AI data with basic data, preferring valid non-empty values
-        return {
-          name: cleanName || basicData.name,
-          email: cleanEmail || basicData.email,
-          phone: cleanPhone || basicData.phone,
-          rawText: text,
-          skills: Array.isArray(aiData.skills) ? aiData.skills.filter((skill: string) => skill && skill.length > 0) : undefined,
-          experience: aiData.experience && aiData.experience.length > 10 ? aiData.experience : undefined,
-          education: aiData.education && aiData.education.length > 5 ? aiData.education : undefined
-        };
-      } catch (parseError) {
-        console.log('Failed to parse AI JSON response:', parseError);
-      }
-    }
-    
-    return basicData;
-  } catch (error) {
-    console.log('AI enhancement failed:', error);
-    return basicData;
-  }
-}
 
 export function validateFileType(file: File): boolean {
   const allowedTypes = [

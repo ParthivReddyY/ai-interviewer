@@ -10,6 +10,7 @@ interface AppStore extends AppState {
   // Candidate actions
   createCandidate: (data: { name: string; email: string; phone: string; resumeContent?: string; skills?: string[]; experience?: string; education?: string; }) => Candidate;
   updateCandidate: (id: string, updates: Partial<Candidate>) => void;
+  updateCandidateStatus: (id: string, status: 'pending' | 'selected' | 'rejected' | 'under-review', notes?: string) => void;
   setCurrentCandidate: (candidate: Candidate | undefined) => void;
   
   // Interview actions
@@ -18,6 +19,7 @@ interface AppStore extends AppState {
   setCurrentInterview: (interview: Interview | undefined) => void;
   addQuestion: (interviewId: string, question: Question) => void;
   addAnswer: (interviewId: string, answer: Answer) => void;
+  updateAnswer: (interviewId: string, answerIndex: number, updates: Partial<Answer>) => void;
   nextQuestion: (interviewId: string) => void;
   completeInterview: (interviewId: string, finalScore: number, summary: string) => void;
   
@@ -27,6 +29,8 @@ interface AppStore extends AppState {
   
   // Utility actions
   reset: () => void;
+  clearCurrentSession: () => void;
+  clearAllData: () => void;
   getCandidateById: (id: string) => Candidate | undefined;
   getInterviewByCandidate: (candidateId: string) => Interview | undefined;
 }
@@ -74,6 +78,14 @@ export const useAppStore = create<AppStore>()(
             state.currentCandidate?.id === id
               ? { ...state.currentCandidate, ...updates }
               : state.currentCandidate,
+        })),
+
+      updateCandidateStatus: (id, status, notes) =>
+        set((state) => ({
+          ...state,
+          candidates: state.candidates.map((c) =>
+            c.id === id ? { ...c, status, notes } : c
+          ),
         })),
 
       setCurrentCandidate: (candidate) =>
@@ -148,6 +160,30 @@ export const useAppStore = create<AppStore>()(
               : state.currentInterview,
         })),
 
+      updateAnswer: (interviewId, answerIndex, updates) =>
+        set((state) => ({
+          ...state,
+          interviews: state.interviews.map((i) =>
+            i.id === interviewId
+              ? {
+                  ...i,
+                  answers: i.answers.map((a, index) =>
+                    index === answerIndex ? { ...a, ...updates } : a
+                  ),
+                }
+              : i
+          ),
+          currentInterview:
+            state.currentInterview?.id === interviewId
+              ? {
+                  ...state.currentInterview,
+                  answers: state.currentInterview.answers.map((a, index) =>
+                    index === answerIndex ? { ...a, ...updates } : a
+                  ),
+                }
+              : state.currentInterview,
+        })),
+
       nextQuestion: (interviewId) =>
         set((state) => ({
           ...state,
@@ -166,30 +202,39 @@ export const useAppStore = create<AppStore>()(
         })),
 
       completeInterview: (interviewId, finalScore, summary) =>
-        set((state) => ({
-          ...state,
-          interviews: state.interviews.map((i) =>
-            i.id === interviewId
-              ? {
-                  ...i,
-                  status: 'completed' as const,
-                  completedAt: new Date(),
-                  finalScore,
-                  summary,
-                }
-              : i
-          ),
-          currentInterview:
-            state.currentInterview?.id === interviewId
-              ? {
-                  ...state.currentInterview,
-                  status: 'completed' as const,
-                  completedAt: new Date(),
-                  finalScore,
-                  summary,
-                }
-              : state.currentInterview,
-        })),
+        set((state) => {
+          const updatedState = {
+            ...state,
+            interviews: state.interviews.map((i) =>
+              i.id === interviewId
+                ? {
+                    ...i,
+                    status: 'completed' as const,
+                    completedAt: new Date(),
+                    finalScore,
+                    summary,
+                  }
+                : i
+            ),
+            currentInterview:
+              state.currentInterview?.id === interviewId
+                ? {
+                    ...state.currentInterview,
+                    status: 'completed' as const,
+                    completedAt: new Date(),
+                    finalScore,
+                    summary,
+                  }
+                : state.currentInterview,
+          };
+
+          // Clear current session after completion to prevent welcome back modal
+          return {
+            ...updatedState,
+            currentCandidate: undefined,
+            currentInterview: undefined,
+          };
+        }),
 
       addChatMessage: (message) => {
         const chatMessage: ChatMessage = {
@@ -213,6 +258,29 @@ export const useAppStore = create<AppStore>()(
         get().interviews.find((i) => i.candidateId === candidateId),
 
       reset: () => set(initialState),
+
+      clearCurrentSession: () =>
+        set((state) => ({
+          ...state,
+          currentCandidate: undefined,
+          currentInterview: undefined,
+          chatHistory: [],
+        })),
+
+      clearAllData: () => {
+        // Clear localStorage timer data
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('timer_')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        // Reset store to initial state
+        set(initialState);
+      },
     }),
     {
       name: 'ai-interviewer-storage',

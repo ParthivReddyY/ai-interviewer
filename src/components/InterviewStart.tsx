@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Play, User } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { aiService } from "@/services/aiService";
-import type { Candidate } from "@/types";
+import { generateQuestionsAction } from "@/lib/actions";
+import type { Candidate, Question } from "@/types";
 
 interface InterviewStartProps {
   candidate: Candidate;
@@ -14,6 +14,7 @@ interface InterviewStartProps {
 
 export default function InterviewStart({ candidate }: InterviewStartProps) {
   const [isStarting, setIsStarting] = useState(false);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [error, setError] = useState<string>("");
   const { createInterview, addChatMessage, addQuestion, updateInterview } = useAppStore();
 
@@ -31,6 +32,13 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
         content: `Welcome to your technical interview, ${candidate.name}! You'll be asked 6 questions of varying difficulty. Take your time to provide thoughtful answers.`,
       });
 
+      // Show question generation loading state
+      setIsGeneratingQuestions(true);
+      addChatMessage({
+        type: 'system',
+        content: '🔄 **Generating personalized interview questions...**\n\nOur AI is analyzing your resume and creating tailored questions just for you. This may take a few moments.',
+      });
+
       // Generate questions using AI with enhanced resume context
       const resumeData = (candidate.skills || candidate.experience || candidate.education) && candidate.resumeContent ? {
         skills: candidate.skills,
@@ -39,10 +47,11 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
         rawText: candidate.resumeContent
       } : undefined;
       
-      const questions = await aiService.generateQuestions(candidate.name, candidate.resumeContent, resumeData);
+      const questions = await generateQuestionsAction(candidate.name, candidate.resumeContent, resumeData);
+      setIsGeneratingQuestions(false);
       
       // Add questions to the interview
-      questions.forEach(question => {
+      questions.forEach((question: Question) => {
         addQuestion(interview.id, question);
       });
 
@@ -210,7 +219,12 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
             disabled={isStarting}
             className="px-8"
           >
-            {isStarting ? (
+            {isGeneratingQuestions ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Questions...
+              </>
+            ) : isStarting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Starting Interview...

@@ -2,10 +2,25 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['mammoth'],
-  // Turbopack configuration - moved from experimental.turbo
+  // Turbopack configuration
   turbopack: {
-    // Turbopack automatically handles Node.js module fallbacks
-    // No need for manual fallback configuration like webpack
+    // Configure resolving for PDF.js
+    resolveAlias: {
+      // Help Turbopack resolve PDF.js properly
+      'pdfjs-dist': 'pdfjs-dist/build/pdf.min.mjs',
+    },
+  },
+  // Webpack configuration as fallback when not using Turbopack
+  webpack: (config) => {
+    // Ignore Node.js-specific modules in client-side bundles
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      crypto: false,
+    };
+    
+    return config;
   },
 };
 
