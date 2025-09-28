@@ -16,11 +16,9 @@ export default function Home() {
   const [hasShownWelcomeBack, setHasShownWelcomeBack] = React.useState(false);
   const [sessionActive, setSessionActive] = React.useState(false);
 
-  // Track user activity to determine if session is active
   React.useEffect(() => {
     const markSessionActive = () => setSessionActive(true);
     
-    // Listen for user interactions
     window.addEventListener('click', markSessionActive);
     window.addEventListener('keypress', markSessionActive);
     window.addEventListener('scroll', markSessionActive);
@@ -32,18 +30,14 @@ export default function Home() {
     };
   }, []);
 
-  // Check for unfinished interviews only on initial mount and before user interaction
   React.useEffect(() => {
     let isMounted = true;
     
-    // Only check on very first load and if session hasn't been marked active
     const timer = setTimeout(() => {
       if (!isMounted || hasShownWelcomeBack || sessionActive) return;
       
       const checkForUnfinishedInterview = () => {
-        // Check if we have a current session that was interrupted
         if (currentInterview && currentCandidate) {
-          // Only show welcome back if the interview is actually in progress (not completed)
           if (currentInterview.status === 'in-progress') {
             setUnfinishedInterview({ interview: currentInterview, candidate: currentCandidate });
             setShowWelcomeBack(true);
@@ -52,7 +46,6 @@ export default function Home() {
           }
         }
 
-        // Look for any in-progress interviews if no current session
         const inProgressInterview = interviews.find(i => i.status === 'in-progress');
         
         if (inProgressInterview) {
@@ -66,7 +59,7 @@ export default function Home() {
       };
 
       checkForUnfinishedInterview();
-    }, 500); // Small delay to ensure everything has loaded
+    }, 500); 
 
     return () => {
       isMounted = false;
@@ -97,7 +90,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Feature highlights */}
           <div className="flex justify-center gap-6 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200/50 shadow-sm">
               <Target className="h-4 w-4 text-slate-700" />
@@ -114,7 +106,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Premium Shadcn UI Tabs */}
         <div className="max-w-6xl mx-auto">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'interviewee' | 'interviewer')} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8 h-14 p-1 bg-white/90 backdrop-blur-sm border border-slate-200/50 shadow-lg rounded-2xl">
@@ -153,13 +144,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Welcome Back Modal */}
       {unfinishedInterview && (
         <WelcomeBackModal
           isOpen={showWelcomeBack}
           onClose={() => {
             setShowWelcomeBack(false);
-            setHasShownWelcomeBack(true); // Prevent showing again
+            setHasShownWelcomeBack(true); 
           }}
           interview={unfinishedInterview.interview}
           candidate={unfinishedInterview.candidate}

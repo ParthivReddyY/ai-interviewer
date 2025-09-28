@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Users, Trophy, Clock, Search, FileText, 
          CheckCircle, XCircle, AlertCircle, Award, Target, TrendingUp, ChevronLeft, ChevronRight,
-         UserCheck, UserX, Eye, Trash2, BarChart3 } from "lucide-react";
+         UserCheck, UserX, Eye, Trash2, BarChart3, X, Filter, ArrowUpDown, Calendar, User, Shield } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
@@ -134,40 +134,11 @@ export default function InterviewerTab() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-start">
           <Button variant="outline" onClick={() => setSelectedCandidate(null)} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleStatusUpdate(selectedCandidate.id, 'selected')}
-              className="flex items-center gap-2 hover:bg-green-50 hover:border-green-300 hover:text-green-700"
-              disabled={selectedCandidate.status === 'selected'}
-            >
-              <UserCheck className="h-4 w-4" />
-              Select Candidate
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleStatusUpdate(selectedCandidate.id, 'under-review')}
-              className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-              disabled={selectedCandidate.status === 'under-review'}
-            >
-              <Eye className="h-4 w-4" />
-              Keep for Review
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleStatusUpdate(selectedCandidate.id, 'rejected')}
-              className="flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
-              disabled={selectedCandidate.status === 'rejected'}
-            >
-              <UserX className="h-4 w-4" />
-              Reject Candidate
-            </Button>
-          </div>
         </div>
 
         {/* Enhanced Candidate Info Card */}
@@ -401,231 +372,470 @@ export default function InterviewerTab() {
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Dashboard Header */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="flex items-center p-6">
-            <Users className="h-8 w-8 text-blue-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-blue-700">{completedInterviews.length}</div>
-              <p className="text-blue-600 text-sm">Total Candidates</p>
+      {/* Enhanced Dashboard Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="text-3xl font-bold text-blue-700 mb-1">{completedInterviews.length}</div>
+                <p className="text-blue-600 text-sm font-semibold">Total Candidates</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-600/10 rounded-full flex items-center justify-center">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-600/5 rounded-full" />
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardContent className="flex items-center p-6">
-            <Trophy className="h-8 w-8 text-green-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-green-700">
-                {completedInterviews.filter(i => (i.finalScore || 0) >= 7).length}
+        <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="text-3xl font-bold text-green-700 mb-1">
+                  {completedInterviews.filter(i => (i.finalScore || 0) >= 7).length}
+                </div>
+                <p className="text-green-600 text-sm font-semibold">High Performers</p>
               </div>
-              <p className="text-green-600 text-sm">High Performers</p>
+              <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
+                <Trophy className="h-6 w-6 text-green-600" />
+              </div>
             </div>
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-green-600/5 rounded-full" />
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <CardContent className="flex items-center p-6">
-            <Clock className="h-8 w-8 text-purple-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-purple-700">
-                {completedInterviews.length > 0 
-                  ? Math.round(completedInterviews.reduce((acc, i) => acc + (i.finalScore || 0), 0) / completedInterviews.length * 10) / 10
-                  : 0}
+        <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="text-3xl font-bold text-purple-700 mb-1">
+                  {completedInterviews.length > 0 
+                    ? Math.round(completedInterviews.reduce((acc, i) => acc + (i.finalScore || 0), 0) / completedInterviews.length * 10) / 10
+                    : 0}
+                </div>
+                <p className="text-purple-600 text-sm font-semibold">Average Score</p>
               </div>
-              <p className="text-purple-600 text-sm">Average Score</p>
+              <div className="w-12 h-12 bg-purple-600/10 rounded-full flex items-center justify-center">
+                <BarChart3 className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-purple-600/5 rounded-full" />
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardContent className="flex items-center p-6">
-            <TrendingUp className="h-8 w-8 text-orange-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-orange-700">
-                {candidates.filter(c => c.status === 'selected').length}
+        <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="text-3xl font-bold text-orange-700 mb-1">
+                  {candidates.filter(c => c.status === 'selected').length}
+                </div>
+                <p className="text-orange-600 text-sm font-semibold">Selected</p>
               </div>
-              <p className="text-orange-600 text-sm">Selected</p>
+              <div className="w-12 h-12 bg-orange-600/10 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+              </div>
             </div>
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-orange-600/5 rounded-full" />
           </CardContent>
         </Card>
       </div>
 
-      {/* Enhanced Search and Filters */}
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Candidate Dashboard
+      {/* Dashboard Header */}
+      <Card className="bg-gradient-to-r from-slate-50 to-white border border-slate-200">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold text-slate-900">
+                <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                Candidate Management Dashboard
               </CardTitle>
-              <CardDescription>
-                Review and manage interview results • {filteredCandidates.length} candidates
+              <CardDescription className="text-base text-slate-600 font-medium">
+                Review, evaluate, and manage interview results • 
+                <span className="font-bold text-slate-900 ml-1">{filteredCandidates.length}</span> candidates available
               </CardDescription>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  Clear All Data
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear All Data</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all candidates, interviews, and chat history. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearAllData} className="bg-red-600 hover:bg-red-700">
+            
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <div className="text-sm text-slate-500">Last updated</div>
+                <div className="text-sm font-semibold text-slate-700">
+                  {new Date().toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200">
+                    <Trash2 className="h-4 w-4" />
                     Clear All Data
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search candidates by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                      <AlertCircle className="h-5 w-5" />
+                      Clear All Data
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-base leading-relaxed">
+                      This will permanently delete all candidates, interviews, chat history, and evaluation data. 
+                      This action cannot be undone and will reset the entire application state.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="font-semibold">Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleClearAllData} 
+                      className="bg-red-600 hover:bg-red-700 font-semibold shadow-lg"
+                    >
+                      Clear All Data
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="selected">Selected</SelectItem>
-                <SelectItem value="under-review">Under Review</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="score">Score (High to Low)</SelectItem>
-                <SelectItem value="date">Date (Recent First)</SelectItem>
-                <SelectItem value="name">Name (A-Z)</SelectItem>
-                <SelectItem value="status">Status</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
+        </CardContent>
+      </Card>
 
-          {filteredCandidates.length === 0 ? (
-            <div className="text-center py-16 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl border border-dashed border-slate-300">
-              <Users className="h-16 w-16 text-slate-400 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold text-slate-600 mb-3">No candidates found</h3>
-              <p className="text-slate-500 max-w-md mx-auto">
-                {searchTerm || filterStatus !== "all" ? "Try adjusting your search or filters to find candidates" : "Completed interviews will appear here once candidates finish their assessments"}
-              </p>
+      {/* Enhanced Search and Filters */}
+      <div className="space-y-6">
+        <div className="bg-slate-50 rounded-xl p-6 mb-6 border border-slate-200">
+          <div className="flex flex-col lg:flex-row gap-4">
+              {/* Enhanced Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+                <Input
+                  placeholder="Search candidates by name or email address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-3 text-base border-slate-300 focus:border-slate-500 focus:ring-slate-500 bg-white shadow-sm"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-slate-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Filter Controls */}
+              <div className="flex gap-3">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-48 py-3 bg-white border-slate-300 focus:border-slate-500 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-slate-500" />
+                      <SelectValue placeholder="Filter by status" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-slate-400"></div>
+                        All Statuses
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pending">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                        Pending Review
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="selected">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        Selected
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="under-review">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        Under Review
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="rejected">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        Rejected
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                  <SelectTrigger className="w-48 py-3 bg-white border-slate-300 focus:border-slate-500 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-slate-500" />
+                      <SelectValue placeholder="Sort by" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="score">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-yellow-500" />
+                        Score (High to Low)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="date">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                        Date (Recent First)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="name">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-purple-500" />
+                        Name (A-Z)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="status">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-green-500" />
+                        Status
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
+            {/* Active Filters Display */}
+            {(searchTerm || filterStatus !== "all") && (
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
+                <span className="text-sm font-medium text-slate-600">Active filters:</span>
+                {searchTerm && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                    Search: &ldquo;{searchTerm}&rdquo;
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchTerm("")}
+                      className="ml-2 h-4 w-4 p-0 hover:bg-blue-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {filterStatus !== "all" && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                    Status: {filterStatus.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFilterStatus("all")}
+                      className="ml-2 h-4 w-4 p-0 hover:bg-green-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {filteredCandidates.length === 0 ? (
+            <Card className="border-2 border-dashed border-slate-300">
+              <CardContent className="text-center py-20 bg-gradient-to-br from-slate-50 via-white to-slate-50">
+                <div className="max-w-md mx-auto space-y-6">
+                  <div className="w-24 h-24 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+                    <Users className="h-12 w-12 text-slate-400" />
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-slate-700">No candidates found</h3>
+                    <p className="text-slate-500 leading-relaxed">
+                      {searchTerm || filterStatus !== "all" 
+                        ? "Try adjusting your search criteria or filters to find the candidates you're looking for" 
+                        : "Completed interviews will appear here once candidates finish their assessments. The candidate management dashboard will help you track and evaluate all applicants."
+                      }
+                    </p>
+                  </div>
+                  {(searchTerm || filterStatus !== "all") && (
+                    <div className="flex gap-2 justify-center">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setFilterStatus("all");
+                        }}
+                        className="hover:bg-slate-50"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <>
-              {/* Horizontal Candidate List */}
-              <div className="space-y-4">
+              {/* Professional Candidate List */}
+              <div className="space-y-3">
                 {paginatedCandidates.map((item) => {
                   const candidate = item.candidate!;
+                  const getPerformanceLevel = (score: number) => {
+                    if (score >= 8.5) return { level: "Outstanding", color: "text-emerald-600", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" };
+                    if (score >= 7.5) return { level: "Excellent", color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200" };
+                    if (score >= 6.5) return { level: "Good", color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200" };
+                    if (score >= 5.0) return { level: "Average", color: "text-yellow-600", bgColor: "bg-yellow-50", borderColor: "border-yellow-200" };
+                    return { level: "Below Average", color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200" };
+                  };
+                  
+                  const performance = getPerformanceLevel(item.finalScore || 0);
+                  
                   return (
-                    <Card key={candidate.id} className="hover:shadow-lg transition-all duration-300 hover:scale-[1.01] border-l-4 border-l-transparent hover:border-l-blue-500 bg-gradient-to-r from-white to-slate-50/50">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          {/* Left side - Candidate Info */}
-                          <div className="flex items-center space-x-4 flex-1">
-                            <Avatar className="h-14 w-14 ring-2 ring-slate-200">
-                              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-blue-100 to-purple-100 text-blue-700">
-                                {getInitials(candidate.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-1">
-                                <h3 className="text-lg font-semibold text-slate-900 truncate">
-                                  {candidate.name}
-                                </h3>
-                                {getStatusBadge(candidate.status)}
-                              </div>
-                              <p className="text-slate-600 text-sm truncate mb-2">{candidate.email}</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500">
-                                <div className="flex items-center gap-1">
-                                  <Trophy className="h-4 w-4" />
-                                  <span className="font-medium">{(item.finalScore || 0).toFixed(1)}/10</span>
+                    <Card key={candidate.id} className="group hover:shadow-xl transition-all duration-300 hover:scale-[1.01] border border-slate-200 hover:border-blue-300 bg-white">
+                      <CardContent className="p-0">
+                        <div className="flex items-center">
+                          {/* Status Color Bar */}
+                          <div className={`w-1 h-24 ${candidate.status === 'selected' ? 'bg-green-500' : candidate.status === 'rejected' ? 'bg-red-500' : candidate.status === 'under-review' ? 'bg-blue-500' : 'bg-gray-300'} rounded-l-lg flex-shrink-0`} />
+                          
+                          <div className="flex items-center justify-between w-full p-6">
+                            {/* Left Section - Avatar & Basic Info */}
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              <Avatar className="h-16 w-16 ring-3 ring-white shadow-lg flex-shrink-0">
+                                <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700">
+                                  {getInitials(candidate.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-xl font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
+                                    {candidate.name}
+                                  </h3>
+                                  {getStatusBadge(candidate.status)}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{item.completedAt && new Date(item.completedAt).toLocaleDateString()}</span>
+                                <p className="text-slate-600 text-sm truncate mb-3 font-medium">{candidate.email}</p>
+                                
+                                {/* Performance & Timing Info */}
+                                <div className="flex items-center gap-6 text-sm">
+                                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${performance.bgColor} ${performance.borderColor} border`}>
+                                    <Trophy className={`h-4 w-4 ${performance.color}`} />
+                                    <span className={`font-semibold ${performance.color}`}>
+                                      {(item.finalScore || 0).toFixed(1)}/10
+                                    </span>
+                                    <span className={`text-xs ${performance.color} opacity-80`}>
+                                      • {performance.level}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 text-slate-500">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="font-medium">
+                                      {item.completedAt && new Date(item.completedAt).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Right side - Score Display and Action Buttons */}
-                          <div className="flex items-center gap-6">
-                            {/* Score Circle */}
-                            <div className="text-center">
-                              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ${getScoreColor(item.finalScore || 0)}`}>
-                                {(item.finalScore || 0).toFixed(1)}
+                            {/* Middle Section - Key Metrics */}
+                            <div className="hidden lg:flex items-center gap-8 px-6 flex-shrink-0">
+                              {/* Score Visualization */}
+                              <div className="text-center">
+                                <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${getScoreColor(item.finalScore || 0)} relative`}>
+                                  <span>{(item.finalScore || 0).toFixed(1)}</span>
+                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md">
+                                    <Trophy className={`h-3 w-3 ${performance.color}`} />
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-600 mt-2 font-semibold">Overall Score</p>
                               </div>
-                              <p className="text-xs text-slate-500 mt-1">Overall Score</p>
+                              
+                              {/* Quick Stats */}
+                              <div className="text-center space-y-1">
+                                <div className="text-2xl font-bold text-slate-700">
+                                  {item.questions?.length || 0}
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium">Questions</p>
+                                <div className="text-sm text-slate-600">
+                                  {Math.round((item.answers?.reduce((acc: number, ans) => acc + (ans.timeSpent || 0), 0) || 0) / 60)}m
+                                </div>
+                                <p className="text-xs text-slate-500">Duration</p>
+                              </div>
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
+                            {/* Right Section - Actions */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              {/* Primary Action - View Details */}
                               <Button
-                                size="sm"
-                                variant="outline"
                                 onClick={() => setSelectedCandidate(candidate)}
-                                className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+                                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
                               >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
+                                <Eye className="h-4 w-4" />
+                                <span className="font-semibold">View Details</span>
                               </Button>
                               
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusUpdate(candidate.id, 'selected')}
-                                className="hover:bg-green-50 hover:border-green-300 hover:text-green-700"
-                                disabled={candidate.status === 'selected'}
-                              >
-                                <UserCheck className="h-4 w-4 mr-1" />
-                                Select
-                              </Button>
-                              
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusUpdate(candidate.id, 'under-review')}
-                                className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-                                disabled={candidate.status === 'under-review'}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Review
-                              </Button>
-                              
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusUpdate(candidate.id, 'rejected')}
-                                className="hover:bg-red-50 hover:border-red-300 hover:text-red-700"
-                                disabled={candidate.status === 'rejected'}
-                              >
-                                <UserX className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
+                              {/* Status Action Dropdown */}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant={candidate.status === 'selected' ? 'default' : 'outline'}
+                                    onClick={() => handleStatusUpdate(candidate.id, 'selected')}
+                                    className={`px-3 py-1 h-8 transition-all duration-200 ${
+                                      candidate.status === 'selected' 
+                                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' 
+                                        : 'hover:bg-green-50 hover:border-green-300 hover:text-green-700 border-slate-300'
+                                    }`}
+                                    disabled={candidate.status === 'selected'}
+                                  >
+                                    <UserCheck className="h-3 w-3" />
+                                  </Button>
+                                  
+                                  <Button
+                                    size="sm"
+                                    variant={candidate.status === 'under-review' ? 'default' : 'outline'}
+                                    onClick={() => handleStatusUpdate(candidate.id, 'under-review')}
+                                    className={`px-3 py-1 h-8 transition-all duration-200 ${
+                                      candidate.status === 'under-review' 
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md' 
+                                        : 'hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border-slate-300'
+                                    }`}
+                                    disabled={candidate.status === 'under-review'}
+                                  >
+                                    <Clock className="h-3 w-3" />
+                                  </Button>
+                                  
+                                  <Button
+                                    size="sm"
+                                    variant={candidate.status === 'rejected' ? 'default' : 'outline'}
+                                    onClick={() => handleStatusUpdate(candidate.id, 'rejected')}
+                                    className={`px-3 py-1 h-8 transition-all duration-200 ${
+                                      candidate.status === 'rejected' 
+                                        ? 'bg-red-600 hover:bg-red-700 text-white shadow-md' 
+                                        : 'hover:bg-red-50 hover:border-red-300 hover:text-red-700 border-slate-300'
+                                    }`}
+                                    disabled={candidate.status === 'rejected'}
+                                  >
+                                    <UserX className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                
+                                {/* Status Labels for Mobile */}
+                                <div className="lg:hidden text-xs text-center">
+                                  <span className="text-slate-500 font-medium">Quick Actions</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -635,53 +845,69 @@ export default function InterviewerTab() {
                 })}
               </div>
 
-              {/* Pagination */}
+              {/* Enhanced Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(startIndex + CANDIDATES_PER_PAGE, filteredCandidates.length)} of {filteredCandidates.length} candidates
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(pageNum)}
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
+                <Card className="mt-6">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="text-sm text-slate-600 font-medium">
+                        Showing <span className="font-bold text-slate-900">{startIndex + 1}</span> to{' '}
+                        <span className="font-bold text-slate-900">
+                          {Math.min(startIndex + CANDIDATES_PER_PAGE, filteredCandidates.length)}
+                        </span>{' '}
+                        of <span className="font-bold text-slate-900">{filteredCandidates.length}</span> candidates
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-2 font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Previous
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`w-10 h-10 font-bold transition-all duration-200 ${
+                                  currentPage === pageNum 
+                                    ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-lg' 
+                                    : 'hover:bg-slate-50 border-slate-300'
+                                }`}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-2 font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
             </>
           )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

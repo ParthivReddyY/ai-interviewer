@@ -23,23 +23,19 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
     setError("");
 
     try {
-      // Create interview
       const interview = createInterview(candidate.id);
       
-      // Add welcome message
       addChatMessage({
         type: 'system',
         content: `Welcome to your technical interview, ${candidate.name}! You'll be asked 6 questions of varying difficulty. Take your time to provide thoughtful answers.`,
       });
 
-      // Show question generation loading state
       setIsGeneratingQuestions(true);
       addChatMessage({
         type: 'system',
         content: '🔄 **Generating personalized interview questions...**\n\nOur AI is analyzing your resume and creating tailored questions just for you. This may take a few moments.',
       });
 
-      // Generate questions using AI with enhanced resume context
       const resumeData = (candidate.skills || candidate.experience || candidate.education) && candidate.resumeContent ? {
         skills: candidate.skills,
         experience: candidate.experience,
@@ -50,18 +46,15 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
       const questions = await generateQuestionsAction(candidate.name, candidate.resumeContent, resumeData);
       setIsGeneratingQuestions(false);
       
-      // Add questions to the interview
       questions.forEach((question: Question) => {
         addQuestion(interview.id, question);
       });
 
-      // Update interview status to in-progress
       updateInterview(interview.id, { 
         status: 'in-progress',
         startedAt: new Date()
       });
 
-      // Add first question message
       if (questions.length > 0) {
         addChatMessage({
           type: 'ai',
@@ -93,7 +86,6 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Candidate Info */}
         <div className="bg-muted/50 rounded-lg p-4">
           <h3 className="font-semibold mb-3">Your Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -111,7 +103,6 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
             </div>
           </div>
           
-          {/* Enhanced Resume Information */}
           {(candidate.skills || candidate.experience || candidate.education) && (
             <div className="mt-4 pt-4 border-t">
               <h4 className="font-medium mb-3 text-muted-foreground">Resume Insights</h4>
@@ -158,7 +149,6 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
           )}
         </div>
 
-        {/* Interview Instructions */}
         <div className="space-y-4">
           <h3 className="font-semibold">Interview Format</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -194,7 +184,6 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
           </div>
         </div>
 
-        {/* Instructions */}
         <Alert>
           <Play className="h-4 w-4" />
           <AlertDescription>
@@ -211,7 +200,6 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
           </Alert>
         )}
 
-        {/* Start Button */}
         <div className="flex justify-center">
           <Button 
             size="lg" 
