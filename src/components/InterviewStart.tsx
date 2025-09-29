@@ -33,7 +33,7 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
       setIsGeneratingQuestions(true);
       addChatMessage({
         type: 'system',
-        content: '🔄 **Generating personalized interview questions...**\n\nOur AI is analyzing your resume and creating tailored questions just for you. This may take a few moments.',
+        content: '🚀 **Generating personalized interview questions...**\n\nOur optimized AI system is analyzing your profile and creating 6 tailored questions in a single efficient request. We use smart batching to reduce API calls while maintaining quality!\n\n✨ Just a moment while we prepare your custom interview...',
       });
 
       const resumeData = (candidate.skills || candidate.experience || candidate.education) && candidate.resumeContent ? {
@@ -90,61 +90,62 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
           <h3 className="font-semibold mb-3">Your Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="font-medium text-muted-foreground">Name:</span>
-              <p>{candidate.name}</p>
+              <strong>Name:</strong> {candidate.name}
             </div>
             <div>
-              <span className="font-medium text-muted-foreground">Email:</span>
-              <p>{candidate.email}</p>
+              <strong>Email:</strong> {candidate.email}
             </div>
             <div>
-              <span className="font-medium text-muted-foreground">Phone:</span>
-              <p>{candidate.phone}</p>
+              <strong>Phone:</strong> {candidate.phone}
             </div>
           </div>
           
           {(candidate.skills || candidate.experience || candidate.education) && (
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="font-medium mb-3 text-muted-foreground">Resume Insights</h4>
-              <div className="space-y-3 text-sm">
-                {candidate.skills && candidate.skills.length > 0 && (
-                  <div>
-                    <span className="font-medium text-muted-foreground">Key Skills:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {candidate.skills.slice(0, 8).map((skill, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
-                          {skill}
-                        </span>
-                      ))}
-                      {candidate.skills.length > 8 && (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                          +{candidate.skills.length - 8} more
-                        </span>
-                      )}
-                    </div>
+            <div className="mt-4 space-y-3">
+              {candidate.skills && candidate.skills.length > 0 && (
+                <div>
+                  <strong className="text-sm">Skills:</strong>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {candidate.skills.slice(0, 8).map((skill, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                    {candidate.skills.length > 8 && (
+                      <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs px-2 py-1 rounded-full">
+                        +{candidate.skills.length - 8} more
+                      </span>
+                    )}
                   </div>
-                )}
-                
-                {candidate.experience && (
-                  <div>
-                    <span className="font-medium text-muted-foreground">Experience:</span>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {candidate.experience.slice(0, 120)}
-                      {candidate.experience.length > 120 && '...'}
-                    </p>
-                  </div>
-                )}
-                
-                {candidate.education && (
-                  <div>
-                    <span className="font-medium text-muted-foreground">Education:</span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {candidate.education.slice(0, 100)}
-                      {candidate.education.length > 100 && '...'}
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+              
+              {candidate.experience && (
+                <div>
+                  <strong className="text-sm">Experience:</strong>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {candidate.experience.length > 200 
+                      ? `${candidate.experience.substring(0, 200)}...` 
+                      : candidate.experience
+                    }
+                  </p>
+                </div>
+              )}
+              
+              {candidate.education && (
+                <div>
+                  <strong className="text-sm">Education:</strong>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {candidate.education.length > 150 
+                      ? `${candidate.education.substring(0, 150)}...` 
+                      : candidate.education
+                    }
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -152,42 +153,30 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
         <div className="space-y-4">
           <h3 className="font-semibold">Interview Format</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-green-600 dark:text-green-400 font-bold">2</span>
-                </div>
-                <p className="font-medium">Easy Questions</p>
-                <p className="text-sm text-muted-foreground">20 seconds each</p>
-              </CardContent>
-            </Card>
+            <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">6</div>
+              <div className="text-sm text-muted-foreground">Questions</div>
+              <div className="text-xs text-muted-foreground mt-1">Technical & Behavioral</div>
+            </div>
             
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="bg-yellow-100 dark:bg-yellow-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-yellow-600 dark:text-yellow-400 font-bold">2</span>
-                </div>
-                <p className="font-medium">Medium Questions</p>
-                <p className="text-sm text-muted-foreground">60 seconds each</p>
-              </CardContent>
-            </Card>
+            <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">20-120s</div>
+              <div className="text-sm text-muted-foreground">Per Question</div>
+              <div className="text-xs text-muted-foreground mt-1">Varies by Difficulty</div>
+            </div>
             
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="bg-red-100 dark:bg-red-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-red-600 dark:text-red-400 font-bold">2</span>
-                </div>
-                <p className="font-medium">Hard Questions</p>
-                <p className="text-sm text-muted-foreground">120 seconds each</p>
-              </CardContent>
-            </Card>
+            <div className="text-center p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">AI</div>
+              <div className="text-sm text-muted-foreground">Powered</div>
+              <div className="text-xs text-muted-foreground mt-1">Instant Feedback</div>
+            </div>
           </div>
         </div>
 
         <Alert>
           <Play className="h-4 w-4" />
           <AlertDescription>
-            <strong>Instructions:</strong> You&apos;ll be presented with 6 technical questions one at a time. 
+            Ready to begin? You&apos;ll be presented with 6 technical questions one at a time. 
             Each question has a time limit. You can submit your answer early, or it will be automatically 
             submitted when time runs out. Answer to the best of your ability - there&apos;s no penalty for 
             trying!
@@ -209,15 +198,14 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
             title="Start your AI-powered technical interview with personalized questions"
             aria-label="Begin the interview process"
           >
-            {isGeneratingQuestions ? (
+            {isStarting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Questions...
-              </>
-            ) : isStarting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Starting Interview...
+                {isGeneratingQuestions ? (
+                  "Generating Questions..."
+                ) : (
+                  "Starting Interview..."
+                )}
               </>
             ) : (
               <>

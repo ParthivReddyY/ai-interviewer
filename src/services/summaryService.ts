@@ -9,22 +9,35 @@ export async function generateSummary(
 ): Promise<string> {
   console.log(`🤖 Generating summary (${finalScore}/10)`);
   
+  // If we have a good fallback analysis, use it to save API calls
+  const hasGoodFeedback = answers.some(a => a.feedback && a.feedback.length > 50 && !a.feedback.includes('Answer recorded'));
+  
+  if (!hasGoodFeedback || finalScore === 0) {
+    console.log('📋 Using intelligent summary generation (saving API call)');
+    return generateFallbackSummary(answers, finalScore, false);
+  }
+  
   try {
-    const prompt = `Write a professional interview summary.
+    const prompt = `Write a professional interview summary based on the evaluation results.
 
-Score: ${finalScore}/10
-Questions: ${answers.length}
-Scores: ${answers.map(a => a.score || 0).join(', ')}
+Final Score: ${finalScore}/10
+Total Questions: ${answers.length}
+Individual Scores: ${answers.map(a => a.score || 0).join(', ')}
 
-Create 2-3 paragraphs covering:
-1. Overall performance
-2. Key strengths
+Key Feedback Points:
+${answers.map((a, i) => `Q${i+1}: ${a.feedback?.substring(0, 100) || 'No feedback'}`).join('\n')}
+
+Create a concise 2-3 paragraph professional summary covering:
+1. Overall performance assessment
+2. Key technical strengths demonstrated
 3. Areas for improvement
-4. Recommendation`;
+4. Final recommendation for hiring consideration
 
-    const summary = await generateContentWithRetry(prompt);
+Keep it professional and specific to the candidate's responses.`;
+
+    const summary = await generateContentWithRetry(prompt, 1); // Only 1 retry for summary
     
-    console.log('✅ Summary generated');
+    console.log('✅ AI summary generated');
     return summary;
 
   } catch (error) {
@@ -32,8 +45,13 @@ Create 2-3 paragraphs covering:
     
     // Check if this is a service unavailability issue
     const isServiceUnavailable = error instanceof Error && 
-      (error.message.includes('503') || error.message.includes('Service Unavailable'));
+      (error.message.includes('503') || 
+       error.message.includes('Service Unavailable') ||
+       error.message.includes('quota exceeded') ||
+       error.message.includes('Too Many Requests') ||
+       error.message.includes('429'));
     
+    console.log('📋 Using enhanced fallback summary generation');
     const fallbackSummary = generateFallbackSummary(answers, finalScore, isServiceUnavailable);
     return fallbackSummary;
   }

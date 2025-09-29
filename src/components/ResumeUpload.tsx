@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { parseResume } from "@/utils/fileParser";
+import { parseResumeAction } from "@/lib/actions";
 import type { ResumeData } from "@/utils/fileParser";
 import { isValidEmail } from "@/utils/validation";
 
@@ -53,7 +54,23 @@ export default function ResumeUpload() {
     setError("");
 
     try {
-      const data = await parseResume(file);
+      const basicData = await parseResume(file);
+      
+      let enhancedData;
+      try {
+        enhancedData = await parseResumeAction(basicData.rawText || '');
+        console.log('✅ Enhanced parsing successful:', enhancedData.parsingMethod);
+      } catch (error) {
+        console.log('⚠️ Enhanced parsing failed, using basic data:', error);
+        enhancedData = basicData;
+      }
+      
+      const data = {
+        ...basicData,
+        ...enhancedData,
+        rawText: basicData.rawText
+      };
+      
       setResumeData(data);
 
       const missing: string[] = [];

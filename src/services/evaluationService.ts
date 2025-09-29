@@ -7,68 +7,191 @@ export async function evaluateAnswers(
   questions: Question[],
   answers: Answer[]
 ): Promise<{ overallScore: number; detailedFeedback: Answer[] }> {
-  console.log(`🤖 Evaluating ${answers.length} answers`);
+  console.log(`🤖 Batch evaluating ${answers.length} answers in single API call`);
   
   try {
-    const evaluated: Answer[] = [];
-    let total = 0;
+    const batchEvaluation = await evaluateAnswersBatch(questions, answers);
+    
+    if (batchEvaluation) {
+      console.log(`✅ Batch evaluation complete: ${batchEvaluation.overallScore}/10`);
+      return batchEvaluation;
+    }
+    
+    console.log('⚠️ Batch evaluation failed, falling back to individual evaluation');
+    return await evaluateAnswersIndividual(questions, answers);
 
-    for (let i = 0; i < answers.length; i++) {
-      const answer = answers[i];
-      const question = questions.find(q => q.id === answer.questionId);
-      
-      if (!question) {
-        const score = Math.max(1, Math.min(10, answer.text.length / 20));
-        evaluated.push({
-          ...answer,
-          score,
-          feedback: 'Answer recorded.',
-          strengths: ['Response provided'],
-          improvements: ['Add more detail']
-        });
-        total += score;
-        continue;
-      }
+  } catch (error) {
+    console.error('❌ Evaluation failed:', error);
+    
+    const isServiceUnavailable = error instanceof Error && 
+      (error.message.includes('503') || 
+       error.message.includes('Service Unavailable') ||
+       error.message.includes('quota exceeded') ||
+       error.message.includes('Too Many Requests') ||
+       error.message.includes('429'));
+    
+    if (isServiceUnavailable) {
+      console.log('📡 AI service quota exhausted or temporarily unavailable, using enhanced fallback evaluation');
+    }
+    
+    return getFallbackEvaluation(answers, isServiceUnavailable);
+  }
+}
 
-      try {
-        const evaluation = await evaluateAnswer(question, answer);
-        evaluated.push({ ...answer, ...evaluation });
-        total += evaluation.score;
-      } catch (err) {
-        console.error(`Error evaluating answer ${i + 1}:`, err);
-        const score = Math.max(1, Math.min(10, answer.text.length / 15));
-        evaluated.push({
-          ...answer,
-          score,
-          feedback: 'Answer evaluated with basic scoring.',
-          strengths: ['Response provided'],
-          improvements: ['Consider more examples']
-        });
-        total += score;
-      }
+async function evaluateAnswersBatch(
+  questions: Question[],
+  answers: Answer[]
+): Promise<{ overallScore: number; detailedFeedback: Answer[] } | null> {
+  try {
+    const evaluationData = answers.map((answer, index) => {
+      const question = questions.find(q => q.id === answer.questionId) || questions[index];
+      return {
+        questionId: index + 1,
+        question: question?.text || 'Question not found',
+        answer: answer.text || '',
+        timeSpent: answer.timeSpent || 0,
+        timeLimit: question?.timeLimit || 60,
+        difficulty: question?.difficulty || 'medium',
+        category: question?.category || 'General'
+      };
+    });
+
+    const prompt = `Evaluate all ${answers.length} interview answers in batch (1-10 scale each):
+
+${evaluationData.map(item => `
+QUESTION ${item.questionId}: "${item.question.replace(/"/g, "'")}"
+ANSWER ${item.questionId}: "${item.answer.replace(/"/g, "'")}"
+TIME: ${item.timeSpent}s/${item.timeLimit}s
+DIFFICULTY: ${item.difficulty}
+CATEGORY: ${item.category}
+`).join('\n')}
+
+Return ONLY valid JSON with this exact structure (NO extra text, NO markdown):
+{
+  "evaluations": [
+    {
+      "score": 7,
+      "feedback": "Brief evaluation feedback",
+      "strengths": ["strength1", "strength2"],
+      "improvements": ["improvement1", "improvement2"]
+    }
+  ],
+  "overallScore": 7.2
+}
+
+Provide exactly ${answers.length} evaluations in the evaluations array, one for each question in order. Ensure valid JSON syntax.`;
+
+    const text = await generateContentWithRetry(prompt, 1);
+    
+    // More robust JSON extraction
+    let jsonText = text.trim();
+    
+    // Remove markdown code blocks if present
+    jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Find JSON object
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON found in batch evaluation response');
+    }
+    
+    jsonText = jsonMatch[0];
+    
+    // Clean up common JSON issues
+    jsonText = jsonText
+      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+      .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes to unquoted keys
+      .replace(/:\s*'([^']*)'/g, ': "$1"') // Convert single quotes to double quotes
+      .replace(/\n/g, ' ') // Remove newlines that might break JSON
+      .replace(/\s+/g, ' '); // Normalize whitespace
+
+    let batchData;
+    try {
+      batchData = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.log('❌ JSON parse error:', parseError);
+      console.log('📄 Problematic JSON:', jsonText.substring(0, 500));
+      throw new Error(`JSON parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+    }
+    
+    if (!batchData.evaluations || !Array.isArray(batchData.evaluations) || 
+        batchData.evaluations.length !== answers.length) {
+      throw new Error('Invalid batch evaluation format');
     }
 
-    const overallScore = Math.round((total / answers.length) * 100) / 100;
-    
-    console.log(`✅ Evaluation complete: ${overallScore}/10`);
+    const evaluated: Answer[] = answers.map((answer, index) => {
+      const evaluation = batchData.evaluations[index];
+      return {
+        ...answer,
+        score: Math.max(1, Math.min(10, Number(evaluation.score) || 5)),
+        feedback: evaluation.feedback || 'Answer evaluated.',
+        strengths: Array.isArray(evaluation.strengths) ? evaluation.strengths.slice(0, 3) : ['Good effort'],
+        improvements: Array.isArray(evaluation.improvements) ? evaluation.improvements.slice(0, 3) : ['Add more detail']
+      };
+    });
+
+    const calculatedOverallScore = evaluated.reduce((sum, ans) => sum + (ans.score || 0), 0) / evaluated.length;
+    const overallScore = Math.round(calculatedOverallScore * 100) / 100;
+
     return {
       overallScore,
       detailedFeedback: evaluated
     };
 
   } catch (error) {
-    console.error('❌ Evaluation failed:', error);
-    
-    // Check if this is a service unavailability issue
-    const isServiceUnavailable = error instanceof Error && 
-      (error.message.includes('503') || error.message.includes('Service Unavailable'));
-    
-    if (isServiceUnavailable) {
-      console.log('📡 AI service temporarily unavailable, using comprehensive backup evaluation');
-    }
-    
-    return getFallbackEvaluation(answers, isServiceUnavailable);
+    console.log('⚠️ Batch evaluation failed:', error instanceof Error ? error.message : error);
+    return null;
   }
+}
+
+async function evaluateAnswersIndividual(
+  questions: Question[],
+  answers: Answer[]
+): Promise<{ overallScore: number; detailedFeedback: Answer[] }> {
+  const evaluated: Answer[] = [];
+  let total = 0;
+
+  for (let i = 0; i < answers.length; i++) {
+    const answer = answers[i];
+    const question = questions.find(q => q.id === answer.questionId);
+    
+    if (!question) {
+      const score = Math.max(1, Math.min(10, answer.text.length / 20));
+      evaluated.push({
+        ...answer,
+        score,
+        feedback: 'Answer recorded.',
+        strengths: ['Response provided'],
+        improvements: ['Add more detail']
+      });
+      total += score;
+      continue;
+    }
+
+    try {
+      const evaluation = await evaluateAnswer(question, answer);
+      evaluated.push({ ...answer, ...evaluation });
+      total += evaluation.score;
+    } catch (err) {
+      console.error(`Error evaluating answer ${i + 1}:`, err);
+      const score = Math.max(1, Math.min(10, answer.text.length / 15));
+      evaluated.push({
+        ...answer,
+        score,
+        feedback: 'Answer evaluated with basic scoring.',
+        strengths: ['Response provided'],
+        improvements: ['Consider more examples']
+      });
+      total += score;
+    }
+  }
+
+  const overallScore = Math.round((total / answers.length) * 100) / 100;
+  
+  return {
+    overallScore,
+    detailedFeedback: evaluated
+  };
 }
 
 async function evaluateAnswer(
@@ -109,36 +232,29 @@ Return JSON:
 
 function getFallbackEvaluation(answers: Answer[], isServiceUnavailable = false): { overallScore: number; detailedFeedback: Answer[] } {
   const evaluated = answers.map((answer) => {
-    // Enhanced fallback scoring based on answer content analysis
     const wordCount = answer.text.split(/\s+/).filter(w => w.length > 2).length;
     const hasCode = /```|`\w+`|function|const|let|var|class/.test(answer.text);
     const hasTechnicalTerms = /(api|database|component|state|props|async|await|promise|server|client|framework|library|algorithm|data|structure|security|performance|optimization|design|pattern|architecture|testing|deployment|scaling|monitoring|debugging|error|handling|validation|authentication|authorization|http|rest|graphql|json|xml|html|css|javascript|typescript|python|java|react|vue|angular|node|express|django|flask|spring|kubernetes|docker|aws|azure|gcp|git|ci\/cd|agile|scrum|devops)/i.test(answer.text);
     const questionLength = answer.text.length;
     
-    let score = 5; // Base score
+    let score = 5; 
     
-    // Adjust based on content quality
     if (wordCount >= 50) score += 2;
     else if (wordCount >= 30) score += 1.5;
     else if (wordCount >= 15) score += 1;
     else if (wordCount < 5) score -= 2;
     
-    // Bonus for code examples
     if (hasCode) score += 1.5;
     
-    // Bonus for technical terminology
     if (hasTechnicalTerms) score += 1;
     
-    // Bonus for comprehensive answers
     if (questionLength > 200) score += 0.5;
     
-    // Time efficiency factor
-    const timeRatio = answer.timeSpent / (answer.timeSpent + 60); // Assuming reasonable time limit
-    if (timeRatio < 0.5) score += 0.5; // Finished quickly
-    else if (timeRatio > 0.9) score -= 0.5; // Took too long
+    const timeRatio = answer.timeSpent / (answer.timeSpent + 60); 
+    if (timeRatio < 0.5) score += 0.5; 
+    else if (timeRatio > 0.9) score -= 0.5; 
     
-    // Cap the score between 1 and 10
-    score = Math.max(1, Math.min(10, Math.round(score * 2) / 2)); // Round to nearest 0.5
+    score = Math.max(1, Math.min(10, Math.round(score * 2) / 2));
     
     const feedback = isServiceUnavailable 
       ? `AI service temporarily unavailable. Score calculated using intelligent backup analysis: ${getScoreFeedback(score)}`

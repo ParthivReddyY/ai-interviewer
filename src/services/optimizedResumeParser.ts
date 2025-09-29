@@ -39,7 +39,7 @@ export async function parseResumeWithAI(resumeText: string): Promise<AIResumeDat
     }
     
     console.log('⚠️ AI parsing had low confidence, using enhanced hybrid approach');
-    return await createHybridResult(resumeText, aiResult);
+    return await createOptimizedHybridResult(resumeText, ruleBasedResult, aiResult);
     
   } catch (error) {
     console.log('❌ AI parsing failed, using enhanced rule-based result:', error);
@@ -48,34 +48,34 @@ export async function parseResumeWithAI(resumeText: string): Promise<AIResumeDat
 }
 
 async function parseWithAI(resumeText: string): Promise<AIResumeData> {
-  const prompt = `You are an expert resume parser. Analyze this resume and extract structured information with high accuracy.
+  const prompt = `You are an expert resume parser. Analyze this resume efficiently and extract all available structured information.
 
 RESUME TEXT:
 ${resumeText}
 
-Return ONLY a JSON object with this exact structure (use null for missing fields):
+Extract ALL available information and return ONLY a JSON object with this structure:
 {
   "name": "Full Name or null",
-  "email": "email@example.com or null",
+  "email": "email@example.com or null", 
   "phone": "+1234567890 or null",
   "location": "City, State/Country or null",
-  "linkedIn": "https://linkedin.com/in/profile or null",
-  "github": "https://github.com/username or null",
-  "website": "https://website.com or null",
-  "jobTitle": "Current/Most Recent Job Title or null",
-  "summary": "Professional summary or objective or null",
+  "linkedIn": "linkedin.com/in/profile or null",
+  "github": "github.com/username or null",
+  "website": "website.com or null",
+  "jobTitle": "Current/Recent Job Title or null",
+  "summary": "Professional summary or null",
   "skills": ["skill1", "skill2"] or null,
-  "experience": "Detailed work experience or null",
-  "education": "Education details or null",
+  "experience": "Work experience details or null",
+  "education": "Education details or null", 
   "certifications": ["cert1", "cert2"] or null,
   "languages": ["English", "Spanish"] or null,
-  "projects": ["Project 1: Description", "Project 2: Description"] or null,
-  "confidence": 0.95
+  "projects": ["Project: Description"] or null,
+  "confidence": 0.85
 }
 
-IMPORTANT: Return ONLY the JSON object, no other text.`;
+CRITICAL: Return ONLY the JSON object, no other text. Set confidence between 0.1-1.0 based on data quality.`;
 
-  const response = await generateContentWithRetry(prompt, 2);
+  const response = await generateContentWithRetry(prompt, 1);
   
   const jsonMatch = response.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
@@ -111,66 +111,60 @@ IMPORTANT: Return ONLY the JSON object, no other text.`;
   return result;
 }
 
-async function createHybridResult(resumeText: string, aiResult: AIResumeData): Promise<AIResumeData> {
-  console.log('🔄 Creating hybrid parsing result...');
+async function createOptimizedHybridResult(
+  resumeText: string, 
+  ruleBasedResult: ResumeData, 
+  aiResult: AIResumeData
+): Promise<AIResumeData> {
+  console.log('🔄 Creating optimized hybrid parsing result...');
   
   try {
-    const fallbackResult = await extractResumeData(resumeText);
-    
-    const hybridResult: AIResumeData = {
+    const merged: AIResumeData = {
+      name: aiResult.name || ruleBasedResult.name,
+      email: aiResult.email || ruleBasedResult.email,
+      phone: aiResult.phone || ruleBasedResult.phone,
       rawText: resumeText,
+      location: aiResult.location || ruleBasedResult.location,
+      linkedIn: aiResult.linkedIn || ruleBasedResult.linkedIn,
+      github: aiResult.github || ruleBasedResult.github,
+      website: aiResult.website || ruleBasedResult.website,
+      jobTitle: aiResult.jobTitle || ruleBasedResult.jobTitle,
+      summary: aiResult.summary || ruleBasedResult.summary,
+      skills: mergeArrays(aiResult.skills, ruleBasedResult.skills),
+      experience: aiResult.experience || ruleBasedResult.experience,
+      education: aiResult.education || ruleBasedResult.education,
+      certifications: mergeArrays(aiResult.certifications, ruleBasedResult.certifications),
+      languages: mergeArrays(aiResult.languages, ruleBasedResult.languages),
+      projects: mergeArrays(aiResult.projects, ruleBasedResult.projects),
       parsingMethod: 'hybrid',
-      confidence: (aiResult.confidence + 0.6) / 2,
-      missingFields: [],
-      name: aiResult.name || fallbackResult.name,
-      email: aiResult.email || fallbackResult.email,
-      phone: aiResult.phone || fallbackResult.phone,
-      location: aiResult.location || fallbackResult.location,
-      linkedIn: aiResult.linkedIn || fallbackResult.linkedIn,
-      github: aiResult.github || fallbackResult.github,
-      website: aiResult.website || fallbackResult.website,
-      jobTitle: aiResult.jobTitle || fallbackResult.jobTitle,
-      summary: aiResult.summary || fallbackResult.summary,
-      experience: aiResult.experience || fallbackResult.experience,
-      education: aiResult.education || fallbackResult.education,
-      skills: mergeArrays(aiResult.skills, fallbackResult.skills).slice(0, 30),
-      certifications: mergeArrays(aiResult.certifications, fallbackResult.certifications).slice(0, 15),
-      languages: mergeArrays(aiResult.languages, fallbackResult.languages).slice(0, 10),
-      projects: mergeArrays(aiResult.projects, fallbackResult.projects).slice(0, 10),
-      skillCategories: aiResult.skillCategories || fallbackResult.skillCategories,
-      experienceLevel: aiResult.experienceLevel || fallbackResult.experienceLevel,
-      industryFocus: mergeArrays(aiResult.industryFocus, fallbackResult.industryFocus).slice(0, 8)
+      confidence: Math.min(0.9, aiResult.confidence + 0.1),
+      missingFields: []
     };
     
-    hybridResult.missingFields = findMissingFields(hybridResult);
+    merged.missingFields = findMissingFields(merged);
     
-    console.log('✅ Hybrid parsing completed');
-    return hybridResult;
+    return merged;
     
   } catch (error) {
-    console.error('❌ Hybrid parsing failed:', error);
+    console.error('❌ Hybrid result creation failed:', error);
     return await createFallbackResult(resumeText);
   }
 }
 
 async function createFallbackResult(resumeText: string): Promise<AIResumeData> {
-  console.log('🔄 Using fallback parsing...');
+  console.log('🔄 Using optimized fallback parsing...');
   
   try {
     const fallbackResult = await extractResumeData(resumeText);
     
     const result: AIResumeData = {
       ...fallbackResult,
-      rawText: resumeText,
       parsingMethod: 'fallback',
-      confidence: 0.6,
-      missingFields: []
+      confidence: 0.7,
+      missingFields: findMissingFields(fallbackResult)
     };
     
-    result.missingFields = findMissingFields(result);
-    
     return result;
-    
   } catch (error) {
     console.error('❌ Fallback parsing failed:', error);
     
@@ -180,13 +174,14 @@ async function createFallbackResult(resumeText: string): Promise<AIResumeData> {
       phone: undefined,
       rawText: resumeText,
       parsingMethod: 'fallback',
-      confidence: 0.1,
-      missingFields: ['name', 'email', 'phone']
+      confidence: 0.3,
+      missingFields: ['name', 'email', 'phone', 'skills', 'experience', 'education']
     };
   }
 }
 
-function mergeArrays(arr1?: string[], arr2?: string[]): string[] {
+function mergeArrays(arr1?: string[], arr2?: string[]): string[] | undefined {
+  if (!arr1 && !arr2) return undefined;
   const combined = [...(arr1 || []), ...(arr2 || [])];
   return [...new Set(combined)]; 
 }
@@ -204,8 +199,8 @@ function findMissingFields(data: Partial<ResumeData>): string[] {
   });
   
   optionalFields.forEach(field => {
-    const value = data[field as keyof ResumeData];
-    if (!value || (Array.isArray(value) && value.length === 0)) {
+    if (!data[field as keyof ResumeData] || 
+        (Array.isArray(data[field as keyof ResumeData]) && !(data[field as keyof ResumeData] as string[])?.length)) {
       missing.push(field);
     }
   });
