@@ -111,6 +111,8 @@ export default function Home() {
               <TabsTrigger 
                 value="interviewee" 
                 className="data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg h-12 rounded-xl font-semibold text-base transition-all duration-300 flex items-center gap-2 hover:bg-slate-100"
+                title="Start taking your AI-powered technical interview"
+                aria-label="Switch to interview taking mode"
               >
                 <Target className="h-5 w-5" />
                 Take Interview
@@ -118,6 +120,8 @@ export default function Home() {
               <TabsTrigger 
                 value="interviewer" 
                 className="data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg h-12 rounded-xl font-semibold text-base transition-all duration-300 flex items-center gap-2 hover:bg-slate-100"
+                title="Review and manage candidate interview results"
+                aria-label="Switch to candidate review dashboard"
               >
                 <BarChart3 className="h-5 w-5" />
                 Review Candidates

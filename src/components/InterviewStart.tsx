@@ -206,6 +206,8 @@ export default function InterviewStart({ candidate }: InterviewStartProps) {
             onClick={handleStartInterview}
             disabled={isStarting}
             className="px-8"
+            title="Start your AI-powered technical interview with personalized questions"
+            aria-label="Begin the interview process"
           >
             {isGeneratingQuestions ? (
               <>

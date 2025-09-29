@@ -42,7 +42,16 @@ Give quick feedback in JSON format:
     };
 
   } catch (error) {
-    console.log('⚠️ Quick evaluation failed, using smart fallback:', error instanceof Error ? error.message : error);
+    console.log('⚠️ Quick evaluation failed, using enhanced fallback:', error instanceof Error ? error.message : error);
+    
+    // Check if this is a service unavailability issue
+    const isServiceUnavailable = error instanceof Error && 
+      (error.message.includes('503') || error.message.includes('Service Unavailable'));
+    
+    if (isServiceUnavailable) {
+      console.log('📡 AI service temporarily unavailable, using intelligent backup scoring');
+    }
+    
     return getQuickFallbackEvaluation(answer, question);
   }
 }

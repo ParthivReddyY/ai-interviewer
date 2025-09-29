@@ -11,11 +11,11 @@ export default function IntervieweeTab() {
 
   if (!currentCandidate) {
     return (
-      <Card>
+      <Card role="main" aria-labelledby="interview-welcome-title">
         <CardHeader>
-          <CardTitle>Welcome to Your Interview</CardTitle>
+          <CardTitle id="interview-welcome-title">Welcome to Your AI-Powered Technical Interview</CardTitle>
           <CardDescription>
-            Please upload your resume to get started. We&apos;ll extract your basic information and begin the interview process.
+            Begin your intelligent interview experience by uploading your resume. Our AI will analyze your skills and create personalized questions.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI-Powered Interview Assistant | Crisp",
-  description: "Streamline your technical interview process with AI-powered questions and automated scoring",
+  title: "AI Interview Assistant",
+  description: "AI-powered interview platform for technical assessments",
 };
 
 export default function RootLayout({

@@ -25,6 +25,15 @@ export default function ResumeUpload() {
     skills: "",
     experience: "",
     education: "",
+    location: "",
+    linkedIn: "",
+    github: "",
+    website: "",
+    summary: "",
+    jobTitle: "",
+    languages: "",
+    certifications: "",
+    projects: "",
   });
 
   const { createCandidate } = useAppStore();
@@ -61,6 +70,15 @@ export default function ResumeUpload() {
         skills: Array.isArray(data.skills) ? data.skills.join(", ") : "",
         experience: data.experience || "",
         education: data.education || "",
+        location: data.location || "",
+        linkedIn: data.linkedIn || "",
+        github: data.github || "",
+        website: data.website || "",
+        summary: data.summary || "",
+        jobTitle: data.jobTitle || "",
+        languages: Array.isArray(data.languages) ? data.languages.join(", ") : "",
+        certifications: Array.isArray(data.certifications) ? data.certifications.join(", ") : "",
+        projects: Array.isArray(data.projects) ? data.projects.join("\n• ") : "",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to process resume");
@@ -104,85 +122,203 @@ export default function ResumeUpload() {
           </AlertDescription>
         </Alert>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Full Name {missingFields.includes("name") && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="name"
-                value={manualData.name}
-                onChange={(e) => setManualData({ ...manualData, name: e.target.value })}
-                placeholder="Enter your full name"
-                className={missingFields.includes("name") ? "border-red-300" : ""}
-              />
-            </div>
+        <div className="space-y-6">
+          {/* Required Information */}
+          <div className="bg-red-50/50 border border-red-200 rounded-lg p-4">
+            <h4 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+              <span className="text-red-500">*</span>
+              Required Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Full Name {missingFields.includes("name") && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="name"
+                  value={manualData.name}
+                  onChange={(e) => setManualData({ ...manualData, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className={missingFields.includes("name") ? "border-red-300" : ""}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email Address {missingFields.includes("email") && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={manualData.email}
-                onChange={(e) => setManualData({ ...manualData, email: e.target.value })}
-                placeholder="Enter your email address"
-                className={missingFields.includes("email") ? "border-red-300" : ""}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">
+                  Email Address {missingFields.includes("email") && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={manualData.email}
+                  onChange={(e) => setManualData({ ...manualData, email: e.target.value })}
+                  placeholder="Enter your email address"
+                  className={missingFields.includes("email") ? "border-red-300" : ""}
+                />
+              </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="phone">
-                Phone Number {missingFields.includes("phone") && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={manualData.phone}
-                onChange={(e) => setManualData({ ...manualData, phone: e.target.value })}
-                placeholder="Enter your phone number"
-                className={missingFields.includes("phone") ? "border-red-300" : ""}
-              />
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="phone">
+                  Phone Number {missingFields.includes("phone") && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={manualData.phone}
+                  onChange={(e) => setManualData({ ...manualData, phone: e.target.value })}
+                  placeholder="Enter your phone number"
+                  className={missingFields.includes("phone") ? "border-red-300" : ""}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="font-medium text-muted-foreground">Additional Information (Optional)</h4>
-            
-            <div className="space-y-2">
-              <Label htmlFor="skills">Technical Skills</Label>
-              <Textarea
-                id="skills"
-                value={manualData.skills}
-                onChange={(e) => setManualData({ ...manualData, skills: e.target.value })}
-                placeholder="e.g., JavaScript, React, Python, SQL, Project Management (comma-separated)"
-                className="min-h-[60px]"
-              />
-              <p className="text-xs text-muted-foreground">Separate multiple skills with commas</p>
-            </div>
+          {/* Professional Information */}
+          <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-900 mb-3">Professional Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Current Job Title</Label>
+                <Input
+                  id="jobTitle"
+                  value={manualData.jobTitle}
+                  onChange={(e) => setManualData({ ...manualData, jobTitle: e.target.value })}
+                  placeholder="e.g., Senior Software Engineer"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="experience">Work Experience Summary</Label>
-              <Textarea
-                id="experience"
-                value={manualData.experience}
-                onChange={(e) => setManualData({ ...manualData, experience: e.target.value })}
-                placeholder="Brief summary of your work experience and key achievements..."
-                className="min-h-[80px]"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={manualData.location}
+                  onChange={(e) => setManualData({ ...manualData, location: e.target.value })}
+                  placeholder="e.g., San Francisco, CA"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="education">Education</Label>
-              <Textarea
-                id="education"
-                value={manualData.education}
-                onChange={(e) => setManualData({ ...manualData, education: e.target.value })}
-                placeholder="e.g., Bachelor's in Computer Science, University Name, 2020"
-                className="min-h-[60px]"
-              />
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="summary">Professional Summary</Label>
+                <Textarea
+                  id="summary"
+                  value={manualData.summary}
+                  onChange={(e) => setManualData({ ...manualData, summary: e.target.value })}
+                  placeholder="Brief professional summary highlighting your key strengths and experience..."
+                  className="min-h-[60px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Technical Skills & Experience */}
+          <div className="bg-green-50/50 border border-green-200 rounded-lg p-4">
+            <h4 className="font-semibold text-green-900 mb-3">Technical Information</h4>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="skills">Technical Skills</Label>
+                <Textarea
+                  id="skills"
+                  value={manualData.skills}
+                  onChange={(e) => setManualData({ ...manualData, skills: e.target.value })}
+                  placeholder="e.g., JavaScript, React, Python, Node.js, AWS, Docker (comma-separated)"
+                  className="min-h-[60px]"
+                />
+                <p className="text-xs text-muted-foreground">Separate multiple skills with commas</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="experience">Work Experience Summary</Label>
+                <Textarea
+                  id="experience"
+                  value={manualData.experience}
+                  onChange={(e) => setManualData({ ...manualData, experience: e.target.value })}
+                  placeholder="Brief summary of your work experience and key achievements..."
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="projects">Projects</Label>
+                <Textarea
+                  id="projects"
+                  value={manualData.projects}
+                  onChange={(e) => setManualData({ ...manualData, projects: e.target.value })}
+                  placeholder="Describe your key projects, technologies used, and achievements..."
+                  className="min-h-[80px]"
+                />
+                <p className="text-xs text-muted-foreground">Include project descriptions, technologies, and outcomes</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="languages">Programming Languages</Label>
+                  <Input
+                    id="languages"
+                    value={manualData.languages}
+                    onChange={(e) => setManualData({ ...manualData, languages: e.target.value })}
+                    placeholder="e.g., English, Spanish, French"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="certifications">Certifications</Label>
+                  <Input
+                    id="certifications"
+                    value={manualData.certifications}
+                    onChange={(e) => setManualData({ ...manualData, certifications: e.target.value })}
+                    placeholder="e.g., AWS Certified, Google Cloud"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Education & Links */}
+          <div className="bg-purple-50/50 border border-purple-200 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-900 mb-3">Education & Links</h4>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="education">Education</Label>
+                <Textarea
+                  id="education"
+                  value={manualData.education}
+                  onChange={(e) => setManualData({ ...manualData, education: e.target.value })}
+                  placeholder="e.g., Bachelor's in Computer Science, University Name, 2020"
+                  className="min-h-[60px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="linkedIn">LinkedIn Profile</Label>
+                  <Input
+                    id="linkedIn"
+                    value={manualData.linkedIn}
+                    onChange={(e) => setManualData({ ...manualData, linkedIn: e.target.value })}
+                    placeholder="https://linkedin.com/in/yourname"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="github">GitHub Profile</Label>
+                  <Input
+                    id="github"
+                    value={manualData.github}
+                    onChange={(e) => setManualData({ ...manualData, github: e.target.value })}
+                    placeholder="https://github.com/yourname"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="website">Personal Website</Label>
+                  <Input
+                    id="website"
+                    value={manualData.website}
+                    onChange={(e) => setManualData({ ...manualData, website: e.target.value })}
+                    placeholder="https://yourwebsite.com"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -203,26 +339,44 @@ export default function ResumeUpload() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors">
-        <CardContent className="flex flex-col items-center justify-center p-6">
-          <Upload className="h-12 w-12 text-gray-400 mb-4" />
-          <div className="text-center">
-            <Label htmlFor="resume-upload" className="cursor-pointer">
-              <span className="text-lg font-medium">Upload your resume</span>
-              <p className="text-sm text-muted-foreground mt-1">
-                Supports PDF and DOCX files (max 10MB)
+      <Label 
+        htmlFor="resume-upload" 
+        className="block cursor-pointer"
+      >
+        <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50/50 transition-all duration-200">
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="mb-4">
+              <Upload className="h-16 w-16 text-gray-400 mx-auto" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-gray-700">
+                Click to Upload Your Resume
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Drag and drop or click to select PDF or DOCX files (max 10MB)
               </p>
-            </Label>
-            <Input
-              id="resume-upload"
-              type="file"
-              accept=".pdf,.docx,.doc"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-        </CardContent>
-      </Card>
+              <p className="text-xs text-muted-foreground">
+                Auto-extracts skills, experience, education, and contact details
+              </p>
+            </div>
+            
+            <div className="mt-4 px-4 py-2 bg-primary/10 rounded-full">
+              <span className="text-xs font-medium text-primary">
+                AI-Powered Parsing
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </Label>
+      
+      <Input
+        id="resume-upload"
+        type="file"
+        accept=".pdf,.docx,.doc"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       {file && (
         <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Textarea } from './ui/textarea';
@@ -8,6 +8,7 @@ import { Badge } from './ui/badge';
 import { Clock, Send, MessageCircle, User } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { evaluateAnswersAction, generateSummaryAction } from '@/lib/actions';
+import { InterviewCompletionModal } from './InterviewCompletionModal';
 import type { Answer, ChatMessage } from '@/types';
 
 interface InterviewChatProps {
@@ -35,7 +36,21 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProcessingResults, setIsProcessingResults] = React.useState(false);
   const [hasAnsweredCurrentQuestion, setHasAnsweredCurrentQuestion] = React.useState(false);
+  const [showCompletionModal, setShowCompletionModal] = React.useState(false);
+  const [completionData, setCompletionData] = React.useState<{
+    finalScore: number;
+    summary: string;
+    candidateName: string;
+  } | null>(null);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const currentQuestion = interview?.questions[interview.currentQuestionIndex];
   const isLastQuestion = interview ? interview.currentQuestionIndex === interview.questions.length - 1 : false;
@@ -45,11 +60,10 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
 
     setIsProcessingResults(true);
     
-    addChatMessage({
-      type: 'system',
-      content: '🔄 **Processing your interview results...**\n\nPlease wait while we:\n• Evaluate your answers with advanced AI\n• Calculate your final score\n• Generate personalized feedback\n\nThis may take a few moments.'
-    });
-
+    // Get candidate name from store
+    const { getCandidateById } = useAppStore.getState();
+    const candidate = getCandidateById(interview.candidateId);
+    
     try {
       const evaluationResult = await evaluateAnswersAction(interview.questions, interview.answers);
       
@@ -69,53 +83,45 @@ export function InterviewChat({ interviewId }: InterviewChatProps) {
 
       completeInterview(interview.id, finalScore, summary);
 
-      const questionsAnswered = interview.answers.length;
-
-      const totalTimeAllowed = interview.questions.reduce((acc, q) => acc + q.timeLimit, 0);
-      const totalTimeUsed = interview.answers.reduce((acc, ans) => acc + ans.timeSpent, 0);
+      // Set completion data for modal and show it
+      const completionInfo = {
+        finalScore,
+        summary,
+        candidateName: candidate?.name || 'Candidate'
+      };
       
-      let performanceLevel = '';
-      if (finalScore >= 8.5) performanceLevel = '🌟 Outstanding';
-      else if (finalScore >= 7.5) performanceLevel = '🚀 Excellent';
-      else if (finalScore >= 6.5) performanceLevel = '✅ Good';
-      else if (finalScore >= 5.0) performanceLevel = '📈 Average';
-      else performanceLevel = '💪 Needs Improvement';
-
-      addChatMessage({
-        type: 'system',
-        content: `🎉 **INTERVIEW COMPLETED!** 🎉
-
-📊 **FINAL RESULTS**
-Overall Score: ${finalScore.toFixed(1)}/10 (${performanceLevel})
-Questions Answered: ${questionsAnswered}/${interview.questions.length}
-Time Efficiency: ${Math.round((totalTimeUsed/totalTimeAllowed) * 100)}% of allocated time used
-
-📝 **PERFORMANCE SUMMARY**
-${summary}
-
-🔍 **NEXT STEPS**
-• Review detailed results in the Interviewer tab
-• Check individual question scores and feedback
-• Use improvement suggestions for future growth
-
-Thank you for completing this technical interview! Your responses have been saved and are ready for review.
-
-🎯 Switching to results view in 3 seconds...`,
-      });
-
+      setCompletionData(completionInfo);
+      setIsProcessingResults(false);
+      
+      // Show modal after setting data
       setTimeout(() => {
-        setActiveTab('interviewer');
-      }, 3000);
+        setShowCompletionModal(true);
+      }, 500);
+
     } catch (error) {
       console.error('Error completing interview:', error);
-      addChatMessage({
-        type: 'system',
-        content: 'There was an error completing the interview. Please try again.',
-      });
-    } finally {
+      
+      // Still show modal with basic info
+      const fallbackCompletionInfo = {
+        finalScore: 5.0,
+        summary: 'Interview completed. There was an error generating detailed feedback.',
+        candidateName: candidate?.name || 'Candidate'
+      };
+      
+      setCompletionData(fallbackCompletionInfo);
       setIsProcessingResults(false);
+      
+      // Show modal after setting fallback data
+      setTimeout(() => {
+        setShowCompletionModal(true);
+      }, 500);
     }
-  }, [interview, completeInterview, addChatMessage, setActiveTab, updateAnswer]);
+  }, [interview, completeInterview, updateAnswer]);
+
+  const handleModalClose = () => {
+    setShowCompletionModal(false);
+    setActiveTab('interviewer');
+  };
 
   const submitAnswer = React.useCallback(async (answerText: string) => {
     if (isSubmitting || !currentQuestion || !interview || hasAnsweredCurrentQuestion) return;
@@ -183,9 +189,11 @@ Thank you for completing this technical interview! Your responses have been save
       if (isLastQuestion) {
         addChatMessage({
           type: 'system',
-          content: '🏁 That was the final question! Processing your interview results...',
+          content: `� **CONGRATULATIONS!** 🎊\n\n✅ **Interview Successfully Completed!**\n\nYou have answered all ${interview.questions.length} questions. Excellent work!\n\n🔄 **What happens next:**\n• 🤖 AI is analyzing your responses\n• 📊 Calculating your final score\n• 📝 Generating personalized feedback\n• 📋 Creating detailed performance insights\n\n⏳ **Processing your results now...**\n\n*This usually takes 30-60 seconds. A completion summary will appear shortly!*`
         });
-        setTimeout(() => completeInterviewProcess(), 3000);
+        
+        // Start processing after a brief delay to show the completion message
+        setTimeout(() => completeInterviewProcess(), 2000);
       } else {
         const nextQ = interview.questions[interview.currentQuestionIndex + 1];
         
@@ -426,7 +434,10 @@ Thank you for completing this technical interview! Your responses have been save
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+          <div 
+            ref={chatContainerRef}
+            className="space-y-3 max-h-64 overflow-y-auto scroll-smooth"
+          >
             {messages.map((message: ChatMessage, index: number) => (
               <div
                 key={index}
@@ -496,6 +507,41 @@ Thank you for completing this technical interview! Your responses have been save
 
         </div>
       </div>
+
+      {/* Processing Results Overlay */}
+      {isProcessingResults && !showCompletionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-96 mx-4">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Processing Results</h3>
+                  <p className="text-sm text-muted-foreground">
+                    🤖 AI is analyzing your responses<br />
+                    📊 Calculating your final score<br />
+                    📝 Generating personalized feedback<br />
+                    <br />
+                    Please wait, this may take 30-60 seconds...
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Completion Modal */}
+      {completionData && (
+        <InterviewCompletionModal
+          isOpen={showCompletionModal}
+          onClose={handleModalClose}
+          candidateName={completionData.candidateName}
+          finalScore={completionData.finalScore}
+          isProcessing={isProcessingResults}
+          summary={completionData.summary}
+        />
+      )}
     </div>
   );
 }

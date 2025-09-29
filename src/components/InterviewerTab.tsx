@@ -172,6 +172,8 @@ export default function InterviewerTab() {
                     onClick={() => handleStatusUpdate(selectedCandidate.id, 'selected')}
                     className="min-w-[120px] hover:bg-green-50 hover:border-green-300 hover:text-green-700"
                     disabled={selectedCandidate.status === 'selected'}
+                    title="Mark candidate as selected for the position"
+                    aria-label="Select candidate for hiring"
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
                     {selectedCandidate.status === 'selected' ? 'Selected' : 'Select'}
@@ -182,6 +184,8 @@ export default function InterviewerTab() {
                     onClick={() => handleStatusUpdate(selectedCandidate.id, 'under-review')}
                     className="min-w-[120px] hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
                     disabled={selectedCandidate.status === 'under-review'}
+                    title="Put candidate under review for further evaluation"
+                    aria-label="Mark candidate for review"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     {selectedCandidate.status === 'under-review' ? 'In Review' : 'Review'}
@@ -192,6 +196,8 @@ export default function InterviewerTab() {
                     onClick={() => handleStatusUpdate(selectedCandidate.id, 'rejected')}
                     className="min-w-[120px] hover:bg-red-50 hover:border-red-300 hover:text-red-700"
                     disabled={selectedCandidate.status === 'rejected'}
+                    title="Mark candidate as not suitable for the position"
+                    aria-label="Reject candidate application"
                   >
                     <UserX className="h-4 w-4 mr-2" />
                     {selectedCandidate.status === 'rejected' ? 'Rejected' : 'Reject'}
@@ -461,7 +467,13 @@ export default function InterviewerTab() {
               
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                    title="Permanently delete all candidate data and interview results"
+                    aria-label="Clear all application data"
+                  >
                     <Trash2 className="h-4 w-4" />
                     Clear All Data
                   </Button>
@@ -753,6 +765,8 @@ export default function InterviewerTab() {
                               <Button
                                 onClick={() => setSelectedCandidate(candidate)}
                                 className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+                                title="View detailed interview results and performance analysis"
+                                aria-label={`View detailed results for ${candidate.name}`}
                               >
                                 <Eye className="h-4 w-4" />
                                 <span className="font-semibold">View Details</span>
@@ -770,6 +784,8 @@ export default function InterviewerTab() {
                                         : 'hover:bg-green-50 hover:border-green-300 hover:text-green-700 border-slate-300'
                                     }`}
                                     disabled={candidate.status === 'selected'}
+                                    title="Select this candidate"
+                                    aria-label={`Select ${candidate.name} for hiring`}
                                   >
                                     <UserCheck className="h-3 w-3" />
                                   </Button>
@@ -784,6 +800,8 @@ export default function InterviewerTab() {
                                         : 'hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border-slate-300'
                                     }`}
                                     disabled={candidate.status === 'under-review'}
+                                    title="Put under review"
+                                    aria-label={`Mark ${candidate.name} for review`}
                                   >
                                     <Clock className="h-3 w-3" />
                                   </Button>
@@ -798,6 +816,8 @@ export default function InterviewerTab() {
                                         : 'hover:bg-red-50 hover:border-red-300 hover:text-red-700 border-slate-300'
                                     }`}
                                     disabled={candidate.status === 'rejected'}
+                                    title="Reject this candidate"
+                                    aria-label={`Reject ${candidate.name}'s application`}
                                   >
                                     <UserX className="h-3 w-3" />
                                   </Button>
