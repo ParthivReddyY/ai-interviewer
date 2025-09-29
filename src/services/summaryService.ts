@@ -9,7 +9,6 @@ export async function generateSummary(
 ): Promise<string> {
   console.log(`🤖 Generating summary (${finalScore}/10)`);
   
-  // If we have a good fallback analysis, use it to save API calls
   const hasGoodFeedback = answers.some(a => a.feedback && a.feedback.length > 50 && !a.feedback.includes('Answer recorded'));
   
   if (!hasGoodFeedback || finalScore === 0) {
@@ -43,7 +42,6 @@ Keep it professional and specific to the candidate's responses.`;
   } catch (error) {
     console.error('❌ Summary generation failed:', error);
     
-    // Check if this is a service unavailability issue
     const isServiceUnavailable = error instanceof Error && 
       (error.message.includes('503') || 
        error.message.includes('Service Unavailable') ||
@@ -63,12 +61,10 @@ function generateFallbackSummary(answers: Answer[], finalScore: number, isServic
   const totalTimeSpent = answers.reduce((acc, ans) => acc + ans.timeSpent, 0);
   const avgTimePerQuestion = Math.round(totalTimeSpent / questionsCount);
   
-  // Analyze answer quality
   const scores = answers.map(a => a.score || 0);
   const highScores = scores.filter(s => s >= 7).length;
   const lowScores = scores.filter(s => s < 5).length;
   
-  // Generate contextual summary
   let performanceLevel = '';
   let recommendation = '';
   
